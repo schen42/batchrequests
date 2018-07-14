@@ -1,55 +1,70 @@
 package batchrequests;
 
-import java.util.LinkedList;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * The long running thread pool that will process batches from a single queue.
+ * @param <T> The request type
+ */
+@Slf4j
 public class PollingQueueWorker<T> {
 
-    private final LinkedList<T> queue;
+    private final Queue<T> queue;
     private final ExecutorService executorService;
+    private final List<Future> taskFutures;
     private final BatchWriter<T, ?> batchWriter;
     private final int batchSize;
     private final int numPollingThreads;
     private final long maxBufferTimeMs;
 
-    public PollingQueueWorker(LinkedList<T> queue,
-                              ExecutorService executorService,
+    public PollingQueueWorker(Queue<T> queue,
                               BatchWriter<T, ?> batchWriter,
                               int batchSize,
                               int numPollingThreads,
                               long maxBufferTimeMs) {
         this.queue = queue;
-        this.executorService = executorService;
         this.batchWriter = batchWriter;
         this.batchSize = batchSize;
         this.numPollingThreads = numPollingThreads;
         this.maxBufferTimeMs = maxBufferTimeMs;
+        if (batchSize < 1) {
+            throw new IllegalArgumentException("Batch size must be positive.  Got: " + batchSize);
+        }
         if (numPollingThreads < 1) {
             throw new IllegalArgumentException("Number of polling threads must be positive. Got: " + numPollingThreads);
         }
         if (maxBufferTimeMs < 1) {
             throw new IllegalArgumentException("Max buffer time must be positive. Got: " + maxBufferTimeMs);
         }
+        this.taskFutures = new ArrayList<>(numPollingThreads);
+        this.executorService = Executors.newFixedThreadPool(numPollingThreads);
         for (int i = 0; i < numPollingThreads; i++) {
-            executorService.submit(new PollingQueueTask<T>(queue, new ReentrantLock(), batchWriter, batchSize, maxBufferTimeMs));
+            Future future =executorService.submit(
+                    new PollingQueueTask<T>(queue, new ReentrantLock(), batchWriter, batchSize, maxBufferTimeMs));
+            taskFutures.add(future);
         }
+        log.info("Polling tasks are running");
     }
 
     public static class PollingQueueWorkerBuilder<T> {
-        private final LinkedList<T> builderQueue;
-        private final ExecutorService builderExecutorService;
+        private final Queue<T> builderQueue;
         private final BatchWriter<T, ?> builderBatchWriter;
         private final int builderBatchSize;
         private int builderNumPollingThreads = 1;
         private long builderMaxBufferTimeMs = 1000L;
 
-        public PollingQueueWorkerBuilder(LinkedList<T> queue,
+        public PollingQueueWorkerBuilder(Queue<T> queue,
                                          BatchWriter<T, ?> batchWriter,
-                                         ExecutorService executorService,
                                          int batchSize) {
             this.builderQueue = queue;
-            this.builderExecutorService = executorService;
             this.builderBatchWriter = batchWriter;
             this.builderBatchSize = batchSize;
         }
@@ -65,7 +80,7 @@ public class PollingQueueWorker<T> {
         }
 
         public PollingQueueWorker<T> build() {
-            return new PollingQueueWorker<T>(builderQueue, builderExecutorService, builderBatchWriter, builderBatchSize,
+            return new PollingQueueWorker<T>(builderQueue, builderBatchWriter, builderBatchSize,
                 builderNumPollingThreads, builderMaxBufferTimeMs);
         }
     }

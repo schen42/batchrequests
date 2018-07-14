@@ -1,13 +1,13 @@
 package batchrequests;
 
-import java.util.Optional;
+/**
+ * TODO
+ * @param <U>
+ */
+public interface BatchWriteResultProcessor<U> {
 
-// TODO:
-// - (Breaking change) Add a return value, if possible
-public interface BatchWriteResultProcessor<T, U> {
+    void processResult(U result);
 
-    void onSuccess(U successfulResponse);
-
-    void onFailure(T failedRequest, Optional<Exception> e);
+    void handleException(Exception e);
 
 }

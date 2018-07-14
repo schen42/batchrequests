@@ -1,15 +1,22 @@
 package batchrequests;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
 /**
- * TODO: metric on failure
+ * TODOs:
+ * - Documentation
+ * - Option to re-drive failure back into the queue (can't re-drive it  result processor because that's a cyclic dependency)
+ *   This will require more work including max number of retries and could negatively impact batch success if entire
+ *   batch fails due to one non-retryable error.
+ * - Handle thread interruption/executor shutdown
  */
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Slf4j
 public class PollingQueueTask<T> implements Runnable {
 
     private final Queue<T> sharedQueue;
@@ -17,33 +24,41 @@ public class PollingQueueTask<T> implements Runnable {
     private final BatchWriter<T, ?> batchWriter;
     private final int batchSize;
     private final long maxBufferTimeMs;
+    private boolean isNotShutdown = true;
 
     @Override
     public void run() {
-        while (true) {
-            try {
-                sharedQueueLock.lock();
-                LinkedList<T> batch;
-                if (sharedQueue.size() >= batchSize) {
-                    batch = new LinkedList<>();
-                    for (int i = 0; i < batchSize; i++) {
-                        batch.add(sharedQueue.poll());
-                    }
-                    sharedQueueLock.unlock();
-                } else {
-                    sharedQueueLock.unlock();
-                    Thread.sleep(maxBufferTimeMs);
-                    sharedQueueLock.lock();
-                    batch = new LinkedList<>();
-                    for (int i = 0; i < sharedQueue.size(); i++) {
-                        batch.add(sharedQueue.poll());
-                    }
+        while (isNotShutdown) {
+            LinkedList<T> batch = new LinkedList<>();
+            sharedQueueLock.lock();
+            // If the buffer has more items than the batch size, we take enough to fill the batch
+            if (sharedQueue.size() >= batchSize) {
+                for (int i = 0; i < batchSize; i++) {
+                    batch.add(sharedQueue.poll());
                 }
-                batchWriter.write(batch);
-            } catch (InterruptedException e) {
-                // LOG
-                break;
+                sharedQueueLock.unlock();
+            // Otherwise, we wait for the pre-configured amount of time and take whatever is in the queue
+            // to prevent staleness.
+            } else {
+                sharedQueueLock.unlock();
+                try {
+                    // TODO: Is there a more testable way of doing this?
+                    Thread.sleep(maxBufferTimeMs);
+                } catch (Exception e) {
+                    log.error("Thread.sleep was interrupted, retrying poll", e);
+                    break;
+                }
+                sharedQueueLock.lock();
+                for (int i = 0; i < sharedQueue.size(); i++) {
+                    batch.add(sharedQueue.poll());
+                }
+                sharedQueueLock.unlock();
             }
+            batchWriter.performWrite(batch);
         }
+    }
+
+    public void shutdown() {
+        isNotShutdown = false;
     }
 }
