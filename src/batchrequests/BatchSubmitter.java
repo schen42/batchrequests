@@ -24,7 +24,8 @@ import java.util.Queue;
  * - Different load balancing strategies
  * - Convenience factories for different sinks
  * - Support for CompletableFuture?  This can be passed in right now, but could be convenient.  However, this will
- *   require all batches to go through an extra processing step to complete each record.
+ *   require all batches to go through an extra processing step to complete each record OR require a user to complete
+ *   the futures during the post-processing step (and therefore making it required).
  *
  * @param <T> Type of record
  */
