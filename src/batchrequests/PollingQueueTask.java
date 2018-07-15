@@ -28,11 +28,13 @@ public class PollingQueueTask<T> implements Runnable {
 
     @Override
     public void run() {
+        log.info("Polling starting");
         while (isNotShutdown) {
             LinkedList<T> batch = new LinkedList<>();
             sharedQueueLock.lock();
             // If the buffer has more items than the batch size, we take enough to fill the batch
             if (sharedQueue.size() >= batchSize) {
+                log.info("Buffer reached");
                 for (int i = 0; i < batchSize; i++) {
                     batch.add(sharedQueue.poll());
                 }
@@ -40,6 +42,7 @@ public class PollingQueueTask<T> implements Runnable {
             // Otherwise, we wait for the pre-configured amount of time and take whatever is in the queue
             // to prevent staleness.
             } else {
+                log.info("Buffer not reached, waiting");
                 sharedQueueLock.unlock();
                 try {
                     // TODO: Is there a more testable way of doing this?

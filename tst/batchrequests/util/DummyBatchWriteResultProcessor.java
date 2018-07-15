@@ -3,6 +3,7 @@ package batchrequests.util;
 import batchrequests.BatchWriteResultProcessor;
 import lombok.Getter;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -10,7 +11,7 @@ import java.util.List;
  * Documentation
  */
 @Getter
-public class DummyBatchWriteResultProcessor implements BatchWriteResultProcessor<String> {
+public class DummyBatchWriteResultProcessor implements BatchWriteResultProcessor<DummyRequest, String> {
     private List<String> results;
 
     public DummyBatchWriteResultProcessor() {
@@ -18,12 +19,13 @@ public class DummyBatchWriteResultProcessor implements BatchWriteResultProcessor
     }
 
     @Override
-    public void processResult(String result) {
+    public void processResult(Collection<DummyRequest> requests, String result) {
         synchronized (results) {
             if (!result.isEmpty()) {
                 results.add(result);
             }
         }
+        requests.stream().forEach(request -> request.getCompletableFuture().complete(null));
     }
 
     @Override

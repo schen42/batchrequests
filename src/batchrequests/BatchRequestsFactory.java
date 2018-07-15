@@ -1,5 +1,7 @@
 package batchrequests;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
 
 /**
@@ -8,10 +10,11 @@ import java.util.*;
  * @param <T>
  * @param <U>
  */
+@Slf4j
 public class BatchRequestsFactory<T, U> {
 
     private final BatchWriter<T, U> batchWriter;
-    private final Optional<BatchWriteResultProcessor<U>> resultProcessor;
+    private final Optional<BatchWriteResultProcessor<T, U>> resultProcessor;
     private final List<Queue<T>> queues;
     private final int batchSize;
     private final int numPollingWorkersPerQueue;
@@ -21,7 +24,7 @@ public class BatchRequestsFactory<T, U> {
     private final BatchSubmitter<T> batchSubmitter;
 
     public BatchRequestsFactory(BatchWriter<T, U> batchWriter,
-                                Optional<BatchWriteResultProcessor<U>> resultProcessor,
+                                Optional<BatchWriteResultProcessor<T, U>> resultProcessor,
                                 List<Queue<T>> queues,
                                 int batchSize,
                                 int numPollingWorkersPerQueue,
@@ -40,6 +43,9 @@ public class BatchRequestsFactory<T, U> {
             pollingQueueWorkers.add(workerForQueue);
         }
         this.batchSubmitter = new BatchSubmitter<>(queues);
+
+        log.info("Initialized BatchSubmitter with {} queues and queue workers, each with {} pollers per queue and a {}ms buffer time",
+                pollingQueueWorkers.size(), numPollingWorkersPerQueue, maxBufferTimeMs);
     }
 
     public BatchSubmitter<T> getBatchSubmitter() {
@@ -48,7 +54,7 @@ public class BatchRequestsFactory<T, U> {
 
     public static class BatchRequestsFactoryBuilder<T, U> {
         private final BatchWriter<T, U> builderBatchWriter;
-        private BatchWriteResultProcessor<U> builderResultProcessor;
+        private BatchWriteResultProcessor<T, U> builderResultProcessor;
         private List<Queue<T>> builderQueues = new LinkedList<>(Collections.singletonList(new LinkedList<>()));
         private int builderNumPollingWorkersPerQueue = 1;
         private int builderBatchSize = 25;
@@ -70,7 +76,7 @@ public class BatchRequestsFactory<T, U> {
             return this;
         }
 
-        public BatchRequestsFactoryBuilder<T, U> withBatchWriteResultProcessor(BatchWriteResultProcessor<U> resultProcessor) {
+        public BatchRequestsFactoryBuilder<T, U> withBatchWriteResultProcessor(BatchWriteResultProcessor<T, U> resultProcessor) {
             this.builderResultProcessor = resultProcessor;
             return this;
         }

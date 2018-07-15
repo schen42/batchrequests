@@ -16,7 +16,7 @@ public class BatchRequestIntegrationTests {
 
     @Test
     public void testSuccessfulBatchWrites() throws Exception {
-        long bufferTimeMs = 100L;
+        long bufferTimeMs = 1000L;
         DummyBatchWriteResultProcessor mockResultProcessor = new DummyBatchWriteResultProcessor();
         DummyBatchWriter mockWriter = new DummyBatchWriter(mockResultProcessor, false);
         BatchRequestsFactory<DummyRequest, String> factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder<>(mockWriter)
@@ -31,11 +31,12 @@ public class BatchRequestIntegrationTests {
         for (int i = 0; i < 8; i++) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             batchSubmitter.put(new DummyRequest(i, future));
+            futures.add(future);
         }
 
-        futures.stream().map(future -> {
+        futures.forEach(future -> {
             try {
-                return future.get(bufferTimeMs * 5, TimeUnit.MILLISECONDS);
+                future.get(bufferTimeMs * 5, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 throw new RuntimeException("Future did not complete in time");
             }

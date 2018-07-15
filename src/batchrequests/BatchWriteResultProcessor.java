@@ -1,12 +1,15 @@
 package batchrequests;
 
+import java.util.Collection;
+
 /**
  * TODO
+ * @param <T>
  * @param <U>
  */
-public interface BatchWriteResultProcessor<U> {
+public interface BatchWriteResultProcessor<T, U> {
 
-    void processResult(U result);
+    void processResult(Collection<T> request, U result);
 
     void handleException(Exception e);
 

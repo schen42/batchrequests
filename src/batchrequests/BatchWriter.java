@@ -10,22 +10,22 @@ import java.util.Optional;
  */
 public abstract class BatchWriter<T, U> {
 
-    private final Optional<BatchWriteResultProcessor<U>> processor;
+    private final Optional<BatchWriteResultProcessor<T, U>> processor;
 
     public BatchWriter() {
        this(null);
     }
 
-    public BatchWriter(BatchWriteResultProcessor<U> processor) {
+    public BatchWriter(BatchWriteResultProcessor<T, U> processor) {
         this.processor = Optional.ofNullable(processor);
     }
 
-    abstract public U write(Collection<T> batch);
+    abstract public U write(Collection<T> batchRequests);
 
-    public void performWrite(Collection<T> batch) {
+    public void performWrite(Collection<T> batchRequests) {
         try {
-            U batchWriteResult = write(batch);
-            processor.ifPresent(processor -> processor.processResult(batchWriteResult));
+            U batchWriteResult = write(batchRequests);
+            processor.ifPresent(processor -> processor.processResult(batchRequests, batchWriteResult));
         } catch (Exception e) {
             processor.ifPresent(processor -> processor.handleException(e));
         }
