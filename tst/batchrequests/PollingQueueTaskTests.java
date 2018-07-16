@@ -11,6 +11,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantLock;
@@ -68,8 +69,9 @@ public class PollingQueueTaskTests {
 
         // There should have been at least one invocation to processWrites
         Mockito.verify(mockWriter, Mockito.atLeastOnce()).performWrite(Mockito.any());
-        MatcherAssert.assertThat(mockWriterPerformWriteCaptor.getAllValues().size(), Matchers.greaterThanOrEqualTo(1));
-        MatcherAssert.assertThat(mockWriterPerformWriteCaptor.getAllValues().get(0), Matchers.containsInRelativeOrder(0,1,2,3,4));
+        List<Collection<Integer>> capturedValues = mockWriterPerformWriteCaptor.getAllValues();
+        MatcherAssert.assertThat(capturedValues.size(),Matchers.greaterThanOrEqualTo(1));
+        MatcherAssert.assertThat(capturedValues.get(0), Matchers.containsInRelativeOrder(0,1,2,3,4));
     }
 
     @Test
@@ -92,13 +94,42 @@ public class PollingQueueTaskTests {
 
         // There should have been at least one invocation to processWrites
         Mockito.verify(mockWriter, Mockito.atLeastOnce()).performWrite(Mockito.any());
-        MatcherAssert.assertThat(mockWriterPerformWriteCaptor.getAllValues().size(), Matchers.greaterThanOrEqualTo(1));
-        MatcherAssert.assertThat(mockWriterPerformWriteCaptor.getAllValues().get(0), Matchers.containsInRelativeOrder(0,1,2,3));
+        List<Collection<Integer>> capturedValues = mockWriterPerformWriteCaptor.getAllValues();
+        MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(),
+                capturedValues.size(), Matchers.greaterThanOrEqualTo(1));
+        MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(), capturedValues.get(0),
+                Matchers.containsInRelativeOrder(0,1,2,3));
     }
 
     @Test
-    public void run_whenSleepingAndMoreThanBatchSizeComesIn_thenOnlyBatchSizeIsWritten() {
-        Assert.fail();
+    public void run_whenSleepingAndMoreThanBatchSizeComesIn_thenOnlyBatchSizeIsWritten() throws Exception {
+        waitForWriteLatch = new CountDownLatch(2);
+
+        // Start with a full batch so the worker immediately processes it
+        for (int i = 0; i < MAX_BATCH_SIZE + 3; i++) {
+            queueForMockWriter.add(i);
+        }
+
+        // Start the task
+        Thread thread = new Thread(pollingQueueTask);
+        thread.start();
+
+        // Wait for completion without timeout (It'll be obvious if there's something wrong)
+        waitForWriteLatch.await();
+        pollingQueueTask.shutdown();
+
+        // The worker should never end without releasing all locks
+        Assert.assertEquals(0, lockForMockWriter.getHoldCount());
+
+        // There should have been at least one invocation to processWrites
+        Mockito.verify(mockWriter, Mockito.atLeastOnce()).performWrite(Mockito.any());
+        List<Collection<Integer>> capturedValues = mockWriterPerformWriteCaptor.getAllValues();
+        MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(),
+                capturedValues.size(), Matchers.greaterThanOrEqualTo(2));
+        MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(),
+                capturedValues.get(0), Matchers.containsInRelativeOrder(0,1,2,3,4));
+        MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(),
+                capturedValues.get(1), Matchers.containsInRelativeOrder(5,6,7));
     }
 
     @Test
