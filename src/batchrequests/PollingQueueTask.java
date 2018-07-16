@@ -23,7 +23,7 @@ public class PollingQueueTask<T> implements Runnable {
     private final Queue<T> sharedQueue;
     private final Lock sharedQueueLock;
     private final BatchWriter<T, ?> batchWriter;
-    private final int batchSize;
+    private final int maxBatchSize;
     private final long maxBufferTimeMs;
     private boolean isNotShutdown = true;
 
@@ -35,9 +35,9 @@ public class PollingQueueTask<T> implements Runnable {
             sharedQueueLock.lock();
             // If the buffer has more items than the batch size, we take enough to fill the batch
             System.out.println(String.format("Size of queue %s: %d", sharedQueue, sharedQueue.size()));
-            if (sharedQueue.size() >= batchSize) {
-                System.out.println("Buffer reached of size " + sharedQueue.size() + ", min batch size is " + batchSize);
-                for (int i = 0; i < batchSize; i++) {
+            if (sharedQueue.size() >= maxBatchSize) {
+                System.out.println("Buffer reached of size " + sharedQueue.size() + ", min batch size is " + maxBatchSize);
+                for (int i = 0; i < maxBatchSize; i++) {
                     batch.add(sharedQueue.poll());
                 }
                 sharedQueueLock.unlock();
@@ -55,7 +55,7 @@ public class PollingQueueTask<T> implements Runnable {
                     break;
                 }
                 sharedQueueLock.lock();
-                int toTake =  Math.min(sharedQueue.size(), batchSize);
+                int toTake =  Math.min(sharedQueue.size(), maxBatchSize);
                 System.out.println("Shared queue size right before buffer flush: " + toTake);
                 for (int i = 0; i < toTake; i++) {
                     batch.add(sharedQueue.remove());

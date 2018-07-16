@@ -17,3 +17,4 @@ and it generates you the BatchSubmitter while starting up the background worker 
 * Javadocs writing
 * Javadocs generation
 * Performance profiling
+* License
