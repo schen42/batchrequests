@@ -30,9 +30,6 @@ import java.util.Queue;
  * @param <T> Type of record
  */
 public class BatchSubmitter<T> {
-    /**
-     *
-     */
 
     private List<Queue<T>> queues;
     private int currentIndex;
@@ -45,9 +42,19 @@ public class BatchSubmitter<T> {
         this.currentIndex = 0;
     }
 
-    // TODO: Future?
-    public void put(T requestItem) {
-        queues.get(currentIndex).add(requestItem);
+    private synchronized void moveToNextQueue() {
         currentIndex = (currentIndex + 1) % queues.size();
+    }
+
+    /**
+     * @param requestItem
+     */
+    public void put(T requestItem) {
+        Queue<T> queue = queues.get(currentIndex);
+        synchronized (queue) {
+            queue.add(requestItem);
+            System.out.println(String.format("Put into queue(%s) %d: %s.  Size is now %d", queue, currentIndex, requestItem, queue.size()));
+        }
+        moveToNextQueue();
     }
 }

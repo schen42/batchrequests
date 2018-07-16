@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -15,11 +16,11 @@ import java.util.concurrent.TimeUnit;
 public class BatchRequestIntegrationTests {
 
     @Test
-    public void testSuccessfulBatchWrites() throws Exception {
-        long bufferTimeMs = 1000L;
+    public void testSuccessfulBatchWrites() {
+        long bufferTimeMs = 10L;
         DummyBatchWriteResultProcessor mockResultProcessor = new DummyBatchWriteResultProcessor();
         DummyBatchWriter mockWriter = new DummyBatchWriter(mockResultProcessor, false);
-        BatchRequestsFactory<DummyRequest, String> factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder<>(mockWriter)
+        BatchRequestsFactory<DummyRequest, List<Integer>> factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder<>(mockWriter)
                 .withBatchSize(5)
                 .withNumPollingWorkersPerQueue(1)
                 .withNumQueues(1)
@@ -29,6 +30,7 @@ public class BatchRequestIntegrationTests {
         BatchSubmitter<DummyRequest> batchSubmitter = factory.getBatchSubmitter();
         List<Future> futures = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
+            System.out.println("Submitting: " + i);
             CompletableFuture<Void> future = new CompletableFuture<>();
             batchSubmitter.put(new DummyRequest(i, future));
             futures.add(future);
@@ -42,9 +44,13 @@ public class BatchRequestIntegrationTests {
             }
         });
 
-        Assert.assertEquals(mockResultProcessor.getResults().toString(), 2, mockResultProcessor.getResults().size());
-        Assert.assertEquals("1,2,3,4,5", mockResultProcessor.getResults().get(0));
-        Assert.assertEquals("1,2,3", mockResultProcessor.getResults().get(0));
+        Assert.assertEquals(2, mockResultProcessor.getResults().size());
+        Assert.assertEquals(Arrays.asList(0,1,2,3,4), mockResultProcessor.getResults().get(0));
+        Assert.assertEquals(Arrays.asList(5,6,7), mockResultProcessor.getResults().get(1));
+    }
+
+    @Test
+    public void testSuccessfulBatchWritesMultiThreaded() {
     }
 
 }

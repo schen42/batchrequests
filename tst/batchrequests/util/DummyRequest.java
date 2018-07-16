@@ -10,4 +10,9 @@ import java.util.concurrent.CompletableFuture;
 public class DummyRequest {
     private final Integer requestValue;
     private final CompletableFuture<Void> completableFuture;
+
+    @Override
+    public String toString() {
+        return Integer.toString(requestValue);
+    }
 }

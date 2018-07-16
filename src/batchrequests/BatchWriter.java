@@ -24,6 +24,7 @@ public abstract class BatchWriter<T, U> {
 
     public void performWrite(Collection<T> batchRequests) {
         try {
+            System.out.println("Performing batch write on collection of size " + batchRequests.size());
             U batchWriteResult = write(batchRequests);
             processor.ifPresent(processor -> processor.processResult(batchRequests, batchWriteResult));
         } catch (Exception e) {

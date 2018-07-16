@@ -47,11 +47,11 @@ public class PollingQueueWorker<T> {
         this.taskFutures = new ArrayList<>(numPollingThreads);
         this.executorService = Executors.newFixedThreadPool(numPollingThreads);
         for (int i = 0; i < numPollingThreads; i++) {
-            Future future =executorService.submit(
+            Future future = executorService.submit(
                     new PollingQueueTask<T>(queue, new ReentrantLock(), batchWriter, batchSize, maxBufferTimeMs));
             taskFutures.add(future);
         }
-        log.info("Polling tasks are running");
+        log.info("Polling subtasks are running");
     }
 
     public static class PollingQueueWorkerBuilder<T> {

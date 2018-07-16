@@ -11,27 +11,27 @@ import java.util.List;
  * Documentation
  */
 @Getter
-public class DummyBatchWriteResultProcessor implements BatchWriteResultProcessor<DummyRequest, String> {
-    private List<String> results;
+public class DummyBatchWriteResultProcessor implements BatchWriteResultProcessor<DummyRequest, List<Integer>> {
+    private final List<List<Integer>> results;
 
     public DummyBatchWriteResultProcessor() {
         results = new LinkedList<>();
     }
 
     @Override
-    public void processResult(Collection<DummyRequest> requests, String result) {
+    public void processResult(Collection<DummyRequest> requests, List<Integer> result) {
+        System.out.println("processResult: " + result);
         synchronized (results) {
             if (!result.isEmpty()) {
                 results.add(result);
+                System.out.println("new results: " + results);
             }
         }
-        requests.stream().forEach(request -> request.getCompletableFuture().complete(null));
+        // Also complete the futures
+        requests.forEach(request -> request.getCompletableFuture().complete(null));
     }
 
     @Override
     public void handleException(Exception e) {
-        synchronized (results) {
-            results.add("Exception");
-        }
     }
 }
