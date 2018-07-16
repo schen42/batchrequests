@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import java.util.*;
 
-public class BatchSubmitterTest {
+public class BatchSubmitterTests {
 
     @Test(expected = IllegalArgumentException.class)
     public void put_whenNullQueue_thenExceptionThrown() {
