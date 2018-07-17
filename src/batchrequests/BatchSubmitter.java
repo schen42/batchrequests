@@ -43,7 +43,6 @@ public class BatchSubmitter<T> {
         Queue<T> queue = queues.get(currentIndex);
         synchronized (queue) {
             queue.add(requestItem);
-            System.out.println(String.format("Put into queue(%s) %d: %s.  Size is now %d", queue, currentIndex, requestItem, queue.size()));
         }
         moveToNextQueue();
     }

@@ -45,6 +45,8 @@ class PollingQueueWorker<T> {
             throw new IllegalArgumentException("Max buffer time must be positive. Got: " + maxBufferTimeMs);
         }
         this.taskFutures = new ArrayList<>(numPollingThreads);
+        // We could have used executors more traditionally (by submitting poll tasks), but this would have required
+        // some infinite loop doing that anyways.
         this.executorService = Executors.newFixedThreadPool(numPollingThreads);
         for (int i = 0; i < numPollingThreads; i++) {
             Future future = executorService.submit(

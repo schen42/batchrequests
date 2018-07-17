@@ -29,7 +29,6 @@ public class BatchRequestIntegrationTests {
         BatchSubmitter<DummyRequest> batchSubmitter = factory.getBatchSubmitter();
         List<Future> futures = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            System.out.println("Submitting: " + i);
             CompletableFuture<Void> future = new CompletableFuture<>();
             batchSubmitter.put(new DummyRequest(i, future));
             futures.add(future);

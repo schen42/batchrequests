@@ -38,9 +38,7 @@ class PollingQueueTask<T> implements Runnable {
             List<T> batch = new LinkedList<>();
             sharedQueueLock.lock();
             // If the buffer has more items than the batch size, we take enough to fill the batch
-            System.out.println(String.format("Size of queue %s: %d", sharedQueue, sharedQueue.size()));
             if (sharedQueue.size() >= maxBatchSize) {
-                System.out.println("Buffer reached of size " + sharedQueue.size() + ", min batch size is " + maxBatchSize);
                 for (int i = 0; i < maxBatchSize; i++) {
                     batch.add(sharedQueue.poll());
                 }
@@ -48,11 +46,9 @@ class PollingQueueTask<T> implements Runnable {
             // Otherwise, we wait for the pre-configured amount of time and take whatever is in the queue
             // to prevent staleness.
             } else {
-                System.out.println(String.format("Buffer not reached, got %d elements, waiting", sharedQueue.size()));
                 sharedQueueLock.unlock();
                 try {
                     // TODO: Is there a more testable way of doing this?
-                    System.out.println("Sleeping: " + maxBufferTimeMs);
                     Thread.sleep(maxBufferTimeMs);
                 } catch (InterruptedException e) {
                     // It appears that a thread throwing an InterruptedException doesn't set the interrupted flag
@@ -60,11 +56,10 @@ class PollingQueueTask<T> implements Runnable {
                     // Instead, we'll following these docs and manage the thread lifecycle ourselves:
                     // https://docs.oracle.com/javase/8/docs/technotes/guides/concurrency/threadPrimitiveDeprecation.html
                     shouldContinueProcessing = false;
-                    log.error("Thread.sleep was interrupted, flushing last batch and killing poller", e);
+                    log.warn("Thread.sleep was interrupted, flushing last batch and killing poller", e);
                 }
                 sharedQueueLock.lock();
                 int toTake =  Math.min(sharedQueue.size(), maxBatchSize);
-                System.out.println("Shared queue size right before buffer flush: " + toTake);
                 for (int i = 0; i < toTake; i++) {
                     batch.add(sharedQueue.remove());
                 }
