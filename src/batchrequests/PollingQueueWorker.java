@@ -20,13 +20,13 @@ public class PollingQueueWorker<T> {
     private final Queue<T> queue;
     private final ExecutorService executorService;
     private final List<Future> taskFutures;
-    private final BatchWriter<T, ?> batchWriter;
+    private final BatchWriter<T> batchWriter;
     private final int batchSize;
     private final int numPollingThreads;
     private final long maxBufferTimeMs;
 
     public PollingQueueWorker(Queue<T> queue,
-                              BatchWriter<T, ?> batchWriter,
+                              BatchWriter<T> batchWriter,
                               int batchSize,
                               int numPollingThreads,
                               long maxBufferTimeMs) {
@@ -56,13 +56,13 @@ public class PollingQueueWorker<T> {
 
     public static class PollingQueueWorkerBuilder<T> {
         private final Queue<T> builderQueue;
-        private final BatchWriter<T, ?> builderBatchWriter;
+        private final BatchWriter<T> builderBatchWriter;
         private final int builderBatchSize;
         private int builderNumPollingThreads = 1;
         private long builderMaxBufferTimeMs = 1000L;
 
         public PollingQueueWorkerBuilder(Queue<T> queue,
-                                         BatchWriter<T, ?> batchWriter,
+                                         BatchWriter<T> batchWriter,
                                          int batchSize) {
             this.builderQueue = queue;
             this.builderBatchWriter = batchWriter;
@@ -80,7 +80,7 @@ public class PollingQueueWorker<T> {
         }
 
         public PollingQueueWorker<T> build() {
-            return new PollingQueueWorker<T>(builderQueue, builderBatchWriter, builderBatchSize,
+            return new PollingQueueWorker<>(builderQueue, builderBatchWriter, builderBatchSize,
                 builderNumPollingThreads, builderMaxBufferTimeMs);
         }
     }

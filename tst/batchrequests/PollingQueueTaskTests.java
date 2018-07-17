@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -21,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class PollingQueueTaskTests {
 
-    @Mock private BatchWriter<Integer, Void> mockWriter;
+    @Mock private BatchWriter<Integer> mockWriter;
     private Queue<Integer> queueForMockWriter;
     private ReentrantLock lockForMockWriter;
     private static final int MAX_BATCH_SIZE = 5;
@@ -29,14 +30,13 @@ public class PollingQueueTaskTests {
     private PollingQueueTask<Integer> pollingQueueTask;
     private CountDownLatch waitForWriteLatch;
 
-    @Captor ArgumentCaptor<Collection<Integer>> mockWriterPerformWriteCaptor;
+    @Captor private ArgumentCaptor<Collection<Integer>> mockWriterPerformWriteCaptor;
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
         queueForMockWriter = new LinkedList<>();
         lockForMockWriter = new ReentrantLock();
-        waitForWriteLatch = new CountDownLatch(1);
         Mockito.doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocationOnMock) throws Throwable {
@@ -51,6 +51,8 @@ public class PollingQueueTaskTests {
 
     @Test
     public void run_whenStartingWithFullBatch_thenWrites() throws Exception {
+        waitForWriteLatch = new CountDownLatch(1);
+
         // Start with a full batch so the worker immediately processes it
         for (int i = 0; i < MAX_BATCH_SIZE; i++) {
             queueForMockWriter.add(i);
@@ -60,8 +62,8 @@ public class PollingQueueTaskTests {
         Thread thread = new Thread(pollingQueueTask);
         thread.start();
 
-        // Wait for completion without timeout (It'll be obvious if there's something wrong)
-        waitForWriteLatch.await();
+        // Wait with long timeout that shouldn't be reached in any normal scenario (For error notification reasons)
+        waitForWriteLatch.await(10, TimeUnit.SECONDS);
         pollingQueueTask.shutdown();
 
         // The worker should never end without releasing all locks
@@ -76,6 +78,8 @@ public class PollingQueueTaskTests {
 
     @Test
     public void run_whenStartingWithLessThanFullBatch_thenWrites() throws Exception {
+        waitForWriteLatch = new CountDownLatch(1);
+
         // Start with a full batch so the worker immediately processes it
         for (int i = 0; i < MAX_BATCH_SIZE - 1; i++) {
             queueForMockWriter.add(i);
@@ -85,8 +89,8 @@ public class PollingQueueTaskTests {
         Thread thread = new Thread(pollingQueueTask);
         thread.start();
 
-        // Wait for completion without timeout (It'll be obvious if there's something wrong)
-        waitForWriteLatch.await();
+        // Wait with long timeout that shouldn't be reached in any normal scenario (For error notification reasons)
+        waitForWriteLatch.await(10, TimeUnit.SECONDS);
         pollingQueueTask.shutdown();
 
         // The worker should never end without releasing all locks
@@ -114,8 +118,8 @@ public class PollingQueueTaskTests {
         Thread thread = new Thread(pollingQueueTask);
         thread.start();
 
-        // Wait for completion without timeout (It'll be obvious if there's something wrong)
-        waitForWriteLatch.await();
+        // Wait with long timeout that shouldn't be reached in any normal scenario (For error notification reasons)
+        waitForWriteLatch.await(10, TimeUnit.SECONDS);
         pollingQueueTask.shutdown();
 
         // The worker should never end without releasing all locks

@@ -1,8 +1,9 @@
 package batchrequests;
 
-import batchrequests.util.DummyBatchWriteResultProcessor;
 import batchrequests.util.DummyBatchWriter;
 import batchrequests.util.DummyRequest;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -18,14 +19,12 @@ public class BatchRequestIntegrationTests {
     @Test
     public void testSuccessfulBatchWrites() {
         long bufferTimeMs = 10L;
-        DummyBatchWriteResultProcessor mockResultProcessor = new DummyBatchWriteResultProcessor();
-        DummyBatchWriter mockWriter = new DummyBatchWriter(mockResultProcessor, false);
-        BatchRequestsFactory<DummyRequest, List<Integer>> factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder<>(mockWriter)
+        DummyBatchWriter mockWriter = new DummyBatchWriter(false);
+        BatchRequestsFactory<DummyRequest> factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder<>(mockWriter)
                 .withBatchSize(5)
                 .withNumPollingWorkersPerQueue(1)
                 .withNumQueues(1)
                 .withMaxBufferTimeMs(bufferTimeMs)
-                .withBatchWriteResultProcessor(mockResultProcessor)
                 .build();
         BatchSubmitter<DummyRequest> batchSubmitter = factory.getBatchSubmitter();
         List<Future> futures = new ArrayList<>();
@@ -35,18 +34,17 @@ public class BatchRequestIntegrationTests {
             batchSubmitter.put(new DummyRequest(i, future));
             futures.add(future);
         }
-
         futures.forEach(future -> {
             try {
-                future.get(bufferTimeMs * 5, TimeUnit.MILLISECONDS);
+                future.get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 throw new RuntimeException("Future did not complete in time");
             }
         });
 
-        Assert.assertEquals(2, mockResultProcessor.getResults().size());
-        Assert.assertEquals(Arrays.asList(0,1,2,3,4), mockResultProcessor.getResults().get(0));
-        Assert.assertEquals(Arrays.asList(5,6,7), mockResultProcessor.getResults().get(1));
+        MatcherAssert.assertThat(mockWriter.getNumWriteInvocations().get(), Matchers.greaterThan(1));
+        Assert.assertEquals(Arrays.asList(0,1,2,3,4), mockWriter.getBatchesWritten().get(0));
+        Assert.assertEquals(Arrays.asList(5,6,7), mockWriter.getBatchesWritten().get(1));
     }
 
     @Test

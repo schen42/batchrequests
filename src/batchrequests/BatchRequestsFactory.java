@@ -11,10 +11,9 @@ import java.util.*;
  * @param <U>
  */
 @Slf4j
-public class BatchRequestsFactory<T, U> {
+public class BatchRequestsFactory<T> {
 
-    private final BatchWriter<T, U> batchWriter;
-    private final Optional<BatchWriteResultProcessor<T, U>> resultProcessor;
+    private final BatchWriter<T> batchWriter;
     private final List<Queue<T>> queues;
     private final int batchSize;
     private final int numPollingWorkersPerQueue;
@@ -23,14 +22,12 @@ public class BatchRequestsFactory<T, U> {
     private final List<PollingQueueWorker<T>> pollingQueueWorkers;
     private final BatchSubmitter<T> batchSubmitter;
 
-    public BatchRequestsFactory(BatchWriter<T, U> batchWriter,
-                                Optional<BatchWriteResultProcessor<T, U>> resultProcessor,
+    public BatchRequestsFactory(BatchWriter<T> batchWriter,
                                 List<Queue<T>> queues,
                                 int batchSize,
                                 int numPollingWorkersPerQueue,
                                 long maxBufferTimeMs) {
         this.batchWriter = batchWriter;
-        this.resultProcessor = resultProcessor;
         this.queues = queues;
         this.batchSize = batchSize;
         this.numPollingWorkersPerQueue = numPollingWorkersPerQueue;
@@ -52,20 +49,19 @@ public class BatchRequestsFactory<T, U> {
         return batchSubmitter;
     }
 
-    public static class BatchRequestsFactoryBuilder<T, U> {
-        private final BatchWriter<T, U> builderBatchWriter;
-        private BatchWriteResultProcessor<T, U> builderResultProcessor;
+    public static class BatchRequestsFactoryBuilder<T> {
+        private final BatchWriter<T> builderBatchWriter;
         private List<Queue<T>> builderQueues = new LinkedList<>(Collections.singletonList(new LinkedList<>()));
         private int builderNumPollingWorkersPerQueue = 1;
         private int builderBatchSize = 25;
         private long builderMaxBufferTimeMs = 1000L;
 
-        public BatchRequestsFactoryBuilder(BatchWriter<T, U> batchWriter) {
+        public BatchRequestsFactoryBuilder(BatchWriter<T> batchWriter) {
             this.builderBatchWriter = batchWriter;
         }
 
         /** Convenience function */
-        public BatchRequestsFactoryBuilder<T, U> withNumQueues(int numQueues) {
+        public BatchRequestsFactoryBuilder<T> withNumQueues(int numQueues) {
             if (numQueues < 1) {
                 throw new IllegalArgumentException("Number of queues must be positive. Got: " + numQueues);
             }
@@ -76,35 +72,30 @@ public class BatchRequestsFactory<T, U> {
             return this;
         }
 
-        public BatchRequestsFactoryBuilder<T, U> withBatchWriteResultProcessor(BatchWriteResultProcessor<T, U> resultProcessor) {
-            this.builderResultProcessor = resultProcessor;
-            return this;
-        }
-
-        public BatchRequestsFactoryBuilder<T, U> withQueues(List<Queue<T>> queues) {
+        public BatchRequestsFactoryBuilder<T> withQueues(List<Queue<T>> queues) {
             this.builderQueues = queues;
             return this;
         }
 
-        public BatchRequestsFactoryBuilder<T, U> withNumPollingWorkersPerQueue(int numPollingWorkersPerQueue) {
+        public BatchRequestsFactoryBuilder<T> withNumPollingWorkersPerQueue(int numPollingWorkersPerQueue) {
             this.builderNumPollingWorkersPerQueue = numPollingWorkersPerQueue;
             return this;
         }
 
-        public BatchRequestsFactoryBuilder<T, U> withBatchSize(int batchSize) {
+        public BatchRequestsFactoryBuilder<T> withBatchSize(int batchSize) {
             this.builderBatchSize = batchSize;
             return this;
         }
 
 
-        public BatchRequestsFactoryBuilder<T, U> withMaxBufferTimeMs(long maxBufferTimeMs) {
+        public BatchRequestsFactoryBuilder<T> withMaxBufferTimeMs(long maxBufferTimeMs) {
             this.builderMaxBufferTimeMs = maxBufferTimeMs;
             return this;
         }
 
-        public BatchRequestsFactory<T, U> build() {
-            return new BatchRequestsFactory<>(builderBatchWriter, Optional.ofNullable(builderResultProcessor),
-                    builderQueues, builderBatchSize, builderNumPollingWorkersPerQueue, builderMaxBufferTimeMs);
+        public BatchRequestsFactory<T> build() {
+            return new BatchRequestsFactory<>(builderBatchWriter, builderQueues, builderBatchSize,
+                    builderNumPollingWorkersPerQueue, builderMaxBufferTimeMs);
         }
     }
 }

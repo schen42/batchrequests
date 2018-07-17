@@ -11,7 +11,7 @@ import java.util.concurrent.locks.Lock;
 /**
  * TODOs:
  * - Documentation
- * - Option to re-drive failure back into the queue (can't re-drive it  result processor because that's a cyclic dependency)
+ * - Option to re-drive failure back into the queue (can't re-drive it in result processor because that's a cyclic dependency)
  *   This will require more work including max number of retries and could negatively impact batch success if entire
  *   batch fails due to one non-retryable error.
  * - Handle thread interruption/executor shutdown
@@ -22,7 +22,7 @@ public class PollingQueueTask<T> implements Runnable {
 
     private final Queue<T> sharedQueue;
     private final Lock sharedQueueLock;
-    private final BatchWriter<T, ?> batchWriter;
+    private final BatchWriter<T> batchWriter;
     private final int maxBatchSize;
     private final long maxBufferTimeMs;
     private boolean isNotShutdown = true;
