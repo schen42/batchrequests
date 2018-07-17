@@ -8,7 +8,6 @@ import java.util.*;
  * TODO
  * Convenience factory to generate a {@link BatchSubmitter}.
  * @param <T>
- * @param <U>
  */
 @Slf4j
 public class BatchRequestsFactory<T> {

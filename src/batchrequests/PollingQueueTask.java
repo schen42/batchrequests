@@ -18,7 +18,7 @@ import java.util.concurrent.locks.Lock;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class PollingQueueTask<T> implements Runnable {
+class PollingQueueTask<T> implements Runnable {
 
     private final Queue<T> sharedQueue;
     private final Lock sharedQueueLock;

@@ -1,3 +1,4 @@
 .idea/
 *.iml
 target
+src/log4j2-test.xml

@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @param <T> The request type
  */
 @Slf4j
-public class PollingQueueWorker<T> {
+class PollingQueueWorker<T> {
 
     private final Queue<T> queue;
     private final ExecutorService executorService;
