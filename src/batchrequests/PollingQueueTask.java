@@ -14,7 +14,6 @@ import java.util.concurrent.locks.Lock;
  * - Option to re-drive failure back into the queue (can't re-drive it in result processor because that's a cyclic dependency)
  *   This will require more work including max number of retries and could negatively impact batch success if entire
  *   batch fails due to one non-retryable error.
- * - Handle thread interruption/executor shutdown
  */
 @RequiredArgsConstructor
 @Slf4j
