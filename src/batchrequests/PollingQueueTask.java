@@ -25,18 +25,16 @@ class PollingQueueTask<T> implements Runnable {
     private final BatchWriter<T> batchWriter;
     private final int maxBatchSize;
     private final long maxBufferTimeMs;
-    private boolean shouldContinuePolling = true;
+    private boolean shouldContinueProcessing = true;
 
     /**
      * Run the batch processing, which batches requests in the queue and submits them when the {@link #maxBatchSize}
      * is reached, or when it has waited too long for a batch (defined by {@link #maxBatchSize}).
-     *
-     * Can stop running by calling {@link #shutdown()}
      */
     @Override
     public void run() {
         log.info("Polling starting");
-        while (shouldContinuePolling) {
+        while (!Thread.currentThread().isInterrupted() && shouldContinueProcessing) {
             List<T> batch = new LinkedList<>();
             sharedQueueLock.lock();
             // If the buffer has more items than the batch size, we take enough to fill the batch
@@ -56,10 +54,13 @@ class PollingQueueTask<T> implements Runnable {
                     // TODO: Is there a more testable way of doing this?
                     System.out.println("Sleeping: " + maxBufferTimeMs);
                     Thread.sleep(maxBufferTimeMs);
-                } catch (Exception e) {
-                    log.error("Thread.sleep was interrupted, killing poller", e);
-                    shouldContinuePolling = false;
-                    break;
+                } catch (InterruptedException e) {
+                    // It appears that a thread throwing an InterruptedException doesn't set the interrupted flag
+                    // We could interrupt ourselves, but that seems a little confusing.
+                    // Instead, we'll following these docs and manage the thread lifecycle ourselves:
+                    // https://docs.oracle.com/javase/8/docs/technotes/guides/concurrency/threadPrimitiveDeprecation.html
+                    shouldContinueProcessing = false;
+                    log.error("Thread.sleep was interrupted, flushing last batch and killing poller", e);
                 }
                 sharedQueueLock.lock();
                 int toTake =  Math.min(sharedQueue.size(), maxBatchSize);
@@ -74,6 +75,10 @@ class PollingQueueTask<T> implements Runnable {
     }
 
     public void shutdown() {
-        shouldContinuePolling = false;
+        this.shouldContinueProcessing = false;
+    }
+
+    public boolean isShutdown() {
+        return !shouldContinueProcessing;
     }
 }

@@ -9,11 +9,10 @@ import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -136,13 +135,49 @@ public class PollingQueueTaskTests {
                 capturedValues.get(1), Matchers.containsInRelativeOrder(5,6,7));
     }
 
+    // TODO: This is not a reliable test because it waits
     @Test
-    public void run_whenSleepInterrupted_thenNoFailure() {
-        Assert.fail();
+    public void run_whenSleepInterrupted_thenNoFailure() throws Exception {
+        waitForWriteLatch = new CountDownLatch(1);
+        pollingQueueTask = new PollingQueueTask<>(queueForMockWriter, lockForMockWriter, mockWriter, MAX_BATCH_SIZE,
+                10_000);
+
+        // Start the task with an empty queue, to force a block
+        Thread thread = new Thread(pollingQueueTask);
+        thread.start();
+
+        // Wait until processing has actually started to interrupt
+        Thread.sleep(500);
+
+        // Interrupt
+        thread.interrupt();
+
+        // Wait for a bit for the task to finish
+        waitForWriteLatch.await(10, TimeUnit.SECONDS);
+        Thread.sleep(500);
+
+        // Shutdown flag should be est
+        Assert.assertEquals(true, pollingQueueTask.isShutdown());
     }
 
+    // TODO: This is not a reliable test because it waits
     @Test
-    public void run_whenThreadInterrupted_thenNoFailure() {
-        Assert.fail();
+    public void run_whenThreadInterrupted_thenNoFailure() throws Exception {
+        int numThreads = 5;
+        waitForWriteLatch = new CountDownLatch(5);
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        List<PollingQueueTask> tasks = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+            PollingQueueTask task = new PollingQueueTask<>(queueForMockWriter, lockForMockWriter, mockWriter, MAX_BATCH_SIZE,
+                    10_000);
+            executor.submit(task);
+            tasks.add(task);
+        }
+
+        // Wait a bit for tasks to start
+        Thread.sleep(500);
+
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.SECONDS);
     }
 }
