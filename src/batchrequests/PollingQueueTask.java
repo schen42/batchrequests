@@ -9,8 +9,8 @@ import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
 /**
+ * The long-running task that will continuously batch requests and submit the batch for writing.
  * TODOs:
- * - Documentation
  * - Option to re-drive failure back into the queue (can't re-drive it in result processor because that's a cyclic dependency)
  *   This will require more work including max number of retries and could negatively impact batch success if entire
  *   batch fails due to one non-retryable error.
@@ -25,12 +25,18 @@ class PollingQueueTask<T> implements Runnable {
     private final BatchWriter<T> batchWriter;
     private final int maxBatchSize;
     private final long maxBufferTimeMs;
-    private boolean isNotShutdown = true;
+    private boolean shouldContinuePolling = true;
 
+    /**
+     * Run the batch processing, which batches requests in the queue and submits them when the {@link #maxBatchSize}
+     * is reached, or when it has waited too long for a batch (defined by {@link #maxBatchSize}).
+     *
+     * Can stop running by calling {@link #shutdown()}
+     */
     @Override
     public void run() {
         log.info("Polling starting");
-        while (isNotShutdown) {
+        while (shouldContinuePolling) {
             List<T> batch = new LinkedList<>();
             sharedQueueLock.lock();
             // If the buffer has more items than the batch size, we take enough to fill the batch
@@ -51,7 +57,8 @@ class PollingQueueTask<T> implements Runnable {
                     System.out.println("Sleeping: " + maxBufferTimeMs);
                     Thread.sleep(maxBufferTimeMs);
                 } catch (Exception e) {
-                    log.error("Thread.sleep was interrupted, retrying poll", e);
+                    log.error("Thread.sleep was interrupted, killing poller", e);
+                    shouldContinuePolling = false;
                     break;
                 }
                 sharedQueueLock.lock();
@@ -67,6 +74,6 @@ class PollingQueueTask<T> implements Runnable {
     }
 
     public void shutdown() {
-        isNotShutdown = false;
+        shouldContinuePolling = false;
     }
 }
