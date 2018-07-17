@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * TODO: Documentation
  */
 @Getter
-public class DummyBatchWriter extends BatchWriter<DummyRequest> {
+public class DummyBatchWriter implements BatchWriter<DummyRequest> {
 
     private final boolean shouldAlwaysFail;
     private final List<List<Integer>> batchesWritten;
@@ -25,7 +25,7 @@ public class DummyBatchWriter extends BatchWriter<DummyRequest> {
     }
 
     @Override
-    public void performWrite(Collection<DummyRequest> batch) {
+    public void write(Collection<DummyRequest> batch) {
         numWriteInvocations.getAndIncrement();
         if (shouldAlwaysFail) {
             throw new RuntimeException("shouldAlwaysFail is set to true");

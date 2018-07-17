@@ -65,7 +65,7 @@ class PollingQueueTask<T> implements Runnable {
                 }
                 sharedQueueLock.unlock();
             }
-            batchWriter.performWrite(batch);
+            batchWriter.write(batch);
         }
     }
 

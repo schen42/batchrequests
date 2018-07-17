@@ -42,7 +42,7 @@ public class PollingQueueTaskTests {
                 waitForWriteLatch.countDown();
                 return null;
             }
-        }).when(mockWriter).performWrite(mockWriterPerformWriteCaptor.capture());
+        }).when(mockWriter).write(mockWriterPerformWriteCaptor.capture());
 
         pollingQueueTask = new PollingQueueTask<>(queueForMockWriter, lockForMockWriter, mockWriter, MAX_BATCH_SIZE,
                 BUFFER_TIME_MS);
@@ -69,7 +69,7 @@ public class PollingQueueTaskTests {
         Assert.assertEquals(0, lockForMockWriter.getHoldCount());
 
         // There should have been at least one invocation to processWrites
-        Mockito.verify(mockWriter, Mockito.atLeastOnce()).performWrite(Mockito.any());
+        Mockito.verify(mockWriter, Mockito.atLeastOnce()).write(Mockito.any());
         List<Collection<Integer>> capturedValues = mockWriterPerformWriteCaptor.getAllValues();
         MatcherAssert.assertThat(capturedValues.size(),Matchers.greaterThanOrEqualTo(1));
         MatcherAssert.assertThat(capturedValues.get(0), Matchers.containsInRelativeOrder(0,1,2,3,4));
@@ -96,7 +96,7 @@ public class PollingQueueTaskTests {
         Assert.assertEquals(0, lockForMockWriter.getHoldCount());
 
         // There should have been at least one invocation to processWrites
-        Mockito.verify(mockWriter, Mockito.atLeastOnce()).performWrite(Mockito.any());
+        Mockito.verify(mockWriter, Mockito.atLeastOnce()).write(Mockito.any());
         List<Collection<Integer>> capturedValues = mockWriterPerformWriteCaptor.getAllValues();
         MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(),
                 capturedValues.size(), Matchers.greaterThanOrEqualTo(1));
@@ -125,7 +125,7 @@ public class PollingQueueTaskTests {
         Assert.assertEquals(0, lockForMockWriter.getHoldCount());
 
         // There should have been at least one invocation to processWrites
-        Mockito.verify(mockWriter, Mockito.atLeastOnce()).performWrite(Mockito.any());
+        Mockito.verify(mockWriter, Mockito.atLeastOnce()).write(Mockito.any());
         List<Collection<Integer>> capturedValues = mockWriterPerformWriteCaptor.getAllValues();
         MatcherAssert.assertThat("Error in captured values: " + capturedValues.toString(),
                 capturedValues.size(), Matchers.greaterThanOrEqualTo(2));
