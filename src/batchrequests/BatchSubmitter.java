@@ -2,6 +2,7 @@ package batchrequests;
 
 import java.util.List;
 import java.util.Queue;
+import java.util.RandomAccess;
 
 /**
  *
@@ -24,10 +25,17 @@ public class BatchSubmitter<T> {
     private List<Queue<T>> queues;
     private int currentIndex;
 
+    /**
+     *
+     * @param queues Should be a {@link java.util.RandomAccess} list.
+     */
     public BatchSubmitter(List<Queue<T>> queues) {
         this.queues = queues;
         if (queues == null || queues.size() < 1) {
             throw new IllegalArgumentException("List of queues must be non-empty");
+        }
+        if (!(queues instanceof RandomAccess)) {
+            throw new IllegalArgumentException("The provided queues should be in a RandomAccess list");
         }
         this.currentIndex = 0;
     }
@@ -37,7 +45,7 @@ public class BatchSubmitter<T> {
     }
 
     /**
-     * @param requestItem
+     * @param requestItem An item to collect into a batch, for later batch writing.
      */
     public void put(T requestItem) {
         Queue<T> queue = queues.get(currentIndex);

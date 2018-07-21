@@ -17,7 +17,7 @@ import java.util.concurrent.locks.Lock;
  */
 @RequiredArgsConstructor
 @Slf4j
-class PollingQueueTask<T> implements Runnable {
+class PollingQueueTask<T> extends Thread {
 
     private final Queue<T> sharedQueue;
     private final Lock sharedQueueLock;
@@ -34,37 +34,42 @@ class PollingQueueTask<T> implements Runnable {
     public void run() {
         log.info("Polling starting");
         while (!Thread.currentThread().isInterrupted() && shouldContinueProcessing) {
-            List<T> batch = new LinkedList<>();
-            sharedQueueLock.lock();
-            // If the buffer has more items than the batch size, we take enough to fill the batch
-            if (sharedQueue.size() >= maxBatchSize) {
-                for (int i = 0; i < maxBatchSize; i++) {
-                    batch.add(sharedQueue.poll());
-                }
-                sharedQueueLock.unlock();
-            // Otherwise, we wait for the pre-configured amount of time and take whatever is in the queue
-            // to prevent staleness.
-            } else {
-                sharedQueueLock.unlock();
-                try {
-                    // TODO: Is there a more testable way of doing this?
-                    Thread.sleep(maxBufferTimeMs);
-                } catch (InterruptedException e) {
-                    // It appears that a thread throwing an InterruptedException doesn't set the interrupted flag
-                    // We could interrupt ourselves, but that seems a little confusing.
-                    // Instead, we'll following these docs and manage the thread lifecycle ourselves:
-                    // https://docs.oracle.com/javase/8/docs/technotes/guides/concurrency/threadPrimitiveDeprecation.html
-                    shouldContinueProcessing = false;
-                    log.warn("Thread.sleep was interrupted, flushing last batch and killing poller", e);
-                }
+            try {
+                List<T> batch = new LinkedList<>();
                 sharedQueueLock.lock();
-                int toTake =  Math.min(sharedQueue.size(), maxBatchSize);
-                for (int i = 0; i < toTake; i++) {
-                    batch.add(sharedQueue.remove());
+                // If the buffer has more items than the batch size, we take enough to fill the batch
+                if (sharedQueue.size() >= maxBatchSize) {
+                    for (int i = 0; i < maxBatchSize; i++) {
+                        batch.add(sharedQueue.poll());
+                    }
+                    sharedQueueLock.unlock();
+                // Otherwise, we wait for the pre-configured amount of time and take whatever is in the queue
+                // to prevent staleness.
+                } else {
+                    sharedQueueLock.unlock();
+                    try {
+                        // TODO: Is there a more testable way of doing this?
+                        // We can't reliably test if we stop when this thread is interrupted during the sleep
+                        // We can't reliably test if we stop this thread outside of the sleep
+                        Thread.sleep(maxBufferTimeMs);
+                    } catch (InterruptedException e) {
+                        // We can interrupt the thread here too, but because we may want to shutdown for other reasons,
+                        // we'll follow these docs and manage the thread lifecycle ourselves:
+                        // https://docs.oracle.com/javase/8/docs/technotes/guides/concurrency/threadPrimitiveDeprecation.html
+                        shouldContinueProcessing = false;
+                        log.warn("Thread.sleep was interrupted, flushing last batch and killing poller", e);
+                    }
+                    sharedQueueLock.lock();
+                    int toTake = Math.min(sharedQueue.size(), maxBatchSize);
+                    for (int i = 0; i < toTake; i++) {
+                        batch.add(sharedQueue.remove());
+                    }
+                    sharedQueueLock.unlock();
                 }
-                sharedQueueLock.unlock();
+                batchWriter.write(batch);
+            } catch (Exception e) {
+                log.warn("Unexpected exception in polling task.  Make sure your batch writer handles all RuntimeExceptions", e);
             }
-            batchWriter.write(batch);
         }
     }
 

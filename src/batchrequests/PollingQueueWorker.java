@@ -1,13 +1,16 @@
 package batchrequests;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -15,15 +18,16 @@ import java.util.concurrent.locks.ReentrantLock;
  * @param <T> The request type
  */
 @Slf4j
+@Getter
 class PollingQueueWorker<T> {
 
-    private final Queue<T> queue;
+    @Getter private final Queue<T> queue;
     private final ExecutorService executorService;
     private final List<Future> taskFutures;
-    private final BatchWriter<T> batchWriter;
-    private final int batchSize;
-    private final int numPollingThreads;
-    private final long maxBufferTimeMs;
+    @Getter private final BatchWriter<T> batchWriter;
+    @Getter private final int batchSize;
+    @Getter private final int numPollingThreads;
+    @Getter private final long maxBufferTimeMs;
 
     public PollingQueueWorker(Queue<T> queue,
                               BatchWriter<T> batchWriter,
@@ -44,7 +48,7 @@ class PollingQueueWorker<T> {
         if (maxBufferTimeMs < 1) {
             throw new IllegalArgumentException("Max buffer time must be positive. Got: " + maxBufferTimeMs);
         }
-        this.taskFutures = new ArrayList<>(numPollingThreads);
+        List<Future> taskFutures = new ArrayList<>(numPollingThreads);
         // We could have used executors more traditionally (by submitting poll tasks), but this would have required
         // some infinite loop doing that anyways.
         this.executorService = Executors.newFixedThreadPool(numPollingThreads);
@@ -53,7 +57,29 @@ class PollingQueueWorker<T> {
                     new PollingQueueTask<T>(queue, new ReentrantLock(), batchWriter, batchSize, maxBufferTimeMs));
             taskFutures.add(future);
         }
+        this.taskFutures = Collections.unmodifiableList(taskFutures);
         log.info("Polling subtasks are running");
+    }
+
+    /**
+     * Stop the tasks from polling for more requests.
+     * @param graceTimeMs The time to wait for all tasks to shutdown in milliseconds
+     * @return See {@link ExecutorService#awaitTermination(long, TimeUnit)}
+     * @throws InterruptedException See {@link ExecutorService#awaitTermination(long, TimeUnit)}
+     */
+    public boolean shutdown(long graceTimeMs) throws InterruptedException {
+        // This stops the executor from accepting any new tasks (which it shouldn't be)
+        this.executorService.shutdown();
+        // We have to actually cancel the tasks so that they stop running
+        for (Future f : taskFutures) {
+            f.cancel(true);
+        }
+        return this.executorService.awaitTermination(graceTimeMs, TimeUnit.MILLISECONDS);
+
+    }
+
+    public List<Future> getTaskFutures() {
+        return this.taskFutures;
     }
 
     public static class PollingQueueWorkerBuilder<T> {
