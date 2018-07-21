@@ -40,18 +40,12 @@ public class BatchSubmitter<T> {
         this.currentIndex = 0;
     }
 
-    private synchronized void moveToNextQueue() {
-        currentIndex = (currentIndex + 1) % queues.size();
-    }
-
     /**
      * @param requestItem An item to collect into a batch, for later batch writing.
      */
-    public void put(T requestItem) {
-        Queue<T> queue = queues.get(currentIndex);
-        synchronized (queue) {
-            queue.add(requestItem);
-        }
-        moveToNextQueue();
+    public synchronized void put(T requestItem) {
+        //System.out.println("Putting " + requestItem + " into queue at index " + currentIndex);
+        queues.get(currentIndex).add(requestItem);
+        currentIndex = (currentIndex + 1) % queues.size();
     }
 }
