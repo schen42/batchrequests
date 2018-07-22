@@ -28,7 +28,6 @@ IDE.
 # To-dos
 TODO: Maybe move it to an issue tracker
 * Javadocs writing
-* Put on Github
 * Put on Maven
 * Javadocs generation
 * Performance profiling
