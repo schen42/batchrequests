@@ -34,6 +34,7 @@ TODO: Maybe move it to an issue tracker
 * Performance profiling
 * Put coverage badge on Github
 * Optional retry mechanism (that can be handled via BatchSubmitter right now)
+* Lock-free implementation
 
 # Credits
 * See the `pom.xml` for all dependencies used.
