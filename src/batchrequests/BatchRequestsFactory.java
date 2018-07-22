@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * TODO
@@ -14,7 +15,7 @@ import java.util.*;
 public class BatchRequestsFactory<T> {
 
     @Getter private final BatchWriter<T> batchWriter;
-    @Getter private final List<Queue<T>> queues;
+    @Getter private final List<QueueAndLock<T>> queueAndLocks;
     @Getter private final int batchSize;
     @Getter private final int numPollingWorkersPerQueue;
     @Getter private final long maxBufferTimeMs;
@@ -24,19 +25,19 @@ public class BatchRequestsFactory<T> {
 
     /**
      *
-     * @param batchWriter A {@link BatchWriter}
-     * @param queues A {@link RandomAccess} list of queues, that will be converted into an unmodifiable list
-     * @param batchSize Batch size to be validated
-     * @param numPollingWorkersPerQueue Number of workers per queue to be validated
-     * @param maxBufferTimeMs Buffer time to be validated
+     * @param batchWriter A non-null {@link BatchWriter}
+     * @param queueAndLocks A  non-null, non-empty {@link RandomAccess} list of queueAndLocks, that will be converted into an unmodifiable list
+     * @param batchSize A positive-valued batch size
+     * @param numPollingWorkersPerQueue A positive-valued number of workers per queue
+     * @param maxBufferTimeMs A positive-valued buffer time in which a worker will wait before sending a non-full batch
      */
     public BatchRequestsFactory(BatchWriter<T> batchWriter,
-                                List<Queue<T>> queues,
+                                List<QueueAndLock<T>> queueAndLocks,
                                 int batchSize,
                                 int numPollingWorkersPerQueue,
                                 long maxBufferTimeMs) {
-        if (queues == null || queues.size() < 1) {
-            throw new IllegalArgumentException("Need non-null list that has a positive number of queues");
+        if (queueAndLocks == null || queueAndLocks.size() < 1) {
+            throw new IllegalArgumentException("Need non-null list that has a positive number of queueAndLocks");
         }
         if (batchSize < 1) {
             throw new IllegalArgumentException("Need a positive batch size.  Got: " + batchSize);
@@ -49,20 +50,20 @@ public class BatchRequestsFactory<T> {
         }
 
         this.batchWriter = batchWriter;
-        this.queues = Collections.unmodifiableList(queues);
+        this.queueAndLocks = Collections.unmodifiableList(queueAndLocks);
         this.batchSize = batchSize;
         this.numPollingWorkersPerQueue = numPollingWorkersPerQueue;
         this.maxBufferTimeMs = maxBufferTimeMs;
 
-        this.pollingQueueWorkers = new ArrayList<>(queues.size());
-        for (int i = 0; i < queues.size(); i++) {
+        this.pollingQueueWorkers = new ArrayList<>(queueAndLocks.size());
+        for (int i = 0; i < queueAndLocks.size(); i++) {
             PollingQueueWorker<T> workerForQueue =
-                    new PollingQueueWorker<>(queues.get(i), batchWriter, batchSize, numPollingWorkersPerQueue, maxBufferTimeMs);
-            pollingQueueWorkers.add(workerForQueue);
+                    new PollingQueueWorker<>(queueAndLocks.get(i), batchWriter, batchSize, numPollingWorkersPerQueue, maxBufferTimeMs);
+            this.pollingQueueWorkers.add(workerForQueue);
         }
-        this.batchSubmitter = new BatchSubmitter<>(queues);
+        this.batchSubmitter = new BatchSubmitter<>(queueAndLocks);
 
-        log.info("Initialized BatchSubmitter with {} queues and queue workers, each with {} pollers per queue and a {}ms buffer time",
+        log.info("Initialized BatchSubmitter with {} queueAndLocks and queue workers, each with {} pollers per queue and a {}ms buffer time",
                 pollingQueueWorkers.size(), numPollingWorkersPerQueue, maxBufferTimeMs);
     }
 
@@ -70,9 +71,13 @@ public class BatchRequestsFactory<T> {
         return batchSubmitter;
     }
 
+    /**
+     * A builder with the required parameters as constructor arguments and the optional parameter as builder setters.
+     * @param <T> Type of request
+     */
     public static class BatchRequestsFactoryBuilder<T> {
         private final BatchWriter<T> builderBatchWriter;
-        private List<Queue<T>> builderQueues;
+        private List<QueueAndLock<T>> builderQueues;
         private int builderNumPollingWorkersPerQueue = 1;
         private int builderBatchSize = 25;
         private Integer builderNumQueues;
@@ -88,7 +93,7 @@ public class BatchRequestsFactory<T> {
             return this;
         }
 
-        public BatchRequestsFactoryBuilder<T> withQueues(List<Queue<T>> queues) {
+        public BatchRequestsFactoryBuilder<T> withQueues(List<QueueAndLock<T>> queues) {
             this.builderQueues = queues;
             return this;
         }
@@ -112,16 +117,16 @@ public class BatchRequestsFactory<T> {
         public BatchRequestsFactory<T> build() {
             if (this.builderQueues == null && this.builderNumQueues == null) {
                 // By default, have only one queue
-                this.builderQueues = Collections.singletonList(new LinkedList<>());
+                this.builderQueues = Collections.singletonList(new QueueAndLock<>(new LinkedList<>(), new ReentrantLock()));
             } else if (this.builderQueues != null && this.builderNumQueues != null) {
-                throw new IllegalArgumentException("Cannot set both the queues and the number of queues");
+                throw new IllegalArgumentException("Cannot set both the queueAndLocks and the number of queueAndLocks");
             } else if (this.builderNumQueues != null) {
                 if (this.builderNumQueues < 1) {
-                    throw new IllegalArgumentException("Number of queues must be positive. Got: " + this.builderNumQueues);
+                    throw new IllegalArgumentException("Number of queueAndLocks must be positive. Got: " + this.builderNumQueues);
                 }
-                List<Queue<T>> listOfQueues = new ArrayList<>();
+                List<QueueAndLock<T>> listOfQueues = new ArrayList<>();
                 for (int i = 0; i < this.builderNumQueues; i++) {
-                    listOfQueues.add(new LinkedList<>());
+                    listOfQueues.add(new QueueAndLock<>(new LinkedList<>(), new ReentrantLock()));
                 }
                 this.builderQueues = listOfQueues;
             } // Otherwise, the queue was set (and assumed to have been validated in the setter)

@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 public class BatchSubmitterTests {
@@ -27,34 +28,33 @@ public class BatchSubmitterTests {
 
     @Test(expected = IllegalArgumentException.class)
     public void put_whenNonRandomAccessList_thenExceptionThrown() {
-        LinkedList listOfQueues = new LinkedList();
-        listOfQueues.add(new LinkedList<>());
-        new BatchSubmitter<>(listOfQueues);
+        LinkedList<QueueAndLock> listOfQueues = new LinkedList<>();
+        listOfQueues.add(new QueueAndLock(new LinkedList(), new ReentrantLock()));
+        new BatchSubmitter(listOfQueues);
     }
 
     @Test
     public void put_whenOneQueueAndMultiplePuts_thenSucceeds() {
-        Queue<String> queue = new LinkedList<>();
-        List<Queue<String>> queues = Collections.singletonList(queue);
-        BatchSubmitter<String> submitter = new BatchSubmitter<>(queues);
+        List<QueueAndLock<Integer>> queueAndLocks = Collections.singletonList(new QueueAndLock<>(new LinkedList<>(), new ReentrantLock()));
+        BatchSubmitter<Integer> submitter = new BatchSubmitter<>(queueAndLocks);
         for (int i = 0; i < 5; i++) {
-            submitter.put(Integer.toString(i));
+            submitter.put(i);
         }
-        Assert.assertEquals(5, queue.size());
+        Assert.assertEquals(5, queueAndLocks.get(0).getQueue().size());
     }
 
     @Test
     public void put_whenMultipleQueueAndMultiplePuts_thenSucceeds() {
-        Queue<String> queue1 = new LinkedList<>();
-        Queue<String> queue2 = new LinkedList<>();
-        List<Queue<String>> queues = Arrays.asList(queue1, queue2);
+        QueueAndLock<Integer> queueAndLock1 = new QueueAndLock<>(new LinkedList<>(), new ReentrantLock());
+        QueueAndLock<Integer> queueAndLock2 = new QueueAndLock<>(new LinkedList<>(), new ReentrantLock());
+        List<QueueAndLock<Integer>> queueAndLocks = Arrays.asList(queueAndLock1, queueAndLock2);
 
-        BatchSubmitter<String> submitter = new BatchSubmitter<>(queues);
+        BatchSubmitter<Integer> submitter = new BatchSubmitter<>(queueAndLocks);
         for (int i = 0; i < 5; i++) {
-            submitter.put(Integer.toString(i));
+            submitter.put(i);
         }
-        Assert.assertEquals(3, queue1.size());
-        Assert.assertEquals(2, queue2.size());
+        Assert.assertEquals(3, queueAndLock1.getQueue().size());
+        Assert.assertEquals(2, queueAndLock2.getQueue().size());
     }
 
     @RequiredArgsConstructor
@@ -71,10 +71,10 @@ public class BatchSubmitterTests {
 
     @Test
     public void put_multiThreaded_thenSucceeds() throws Exception {
-        Queue<Integer> queue1 = new LinkedList<>();
-        Queue<Integer> queue2 = new LinkedList<>();
-        List<Queue<Integer>> queues = Arrays.asList(queue1, queue2);
-        BatchSubmitter<Integer> submitter = new BatchSubmitter<>(queues);
+        QueueAndLock<Integer> queueAndLock1 = new QueueAndLock<>(new LinkedList<>(), new ReentrantLock());
+        QueueAndLock<Integer> queueAndLock2 = new QueueAndLock<>(new LinkedList<>(), new ReentrantLock());
+        List<QueueAndLock<Integer>> queueAndLocks = Arrays.asList(queueAndLock1, queueAndLock2);
+        BatchSubmitter<Integer> submitter = new BatchSubmitter<>(queueAndLocks);
 
         ExecutorService executorService = Executors.newFixedThreadPool(4);
         int numsSubmitted = 100;
@@ -86,8 +86,8 @@ public class BatchSubmitterTests {
                 true, executorService.awaitTermination(5, TimeUnit.SECONDS));
 
         LinkedList<Integer> combinedList = new LinkedList<>();
-        combinedList.addAll(queue1);
-        combinedList.addAll(queue2);
+        combinedList.addAll(queueAndLock1.getQueue());
+        combinedList.addAll(queueAndLock2.getQueue());
         MatcherAssert.assertThat(combinedList, Matchers.containsInAnyOrder(IntStream.range(0, numsSubmitted).boxed().toArray()));
     }
 }

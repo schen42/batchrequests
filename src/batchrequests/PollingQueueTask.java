@@ -10,14 +10,18 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * The long-running task that will continuously batch requests and submit the batch for writing.
- * TODOs:
- * - Option to re-drive failure back into the queue (can't re-drive it in result processor because that's a cyclic dependency)
- *   This will require more work including max number of retries and could negatively impact batch success if entire
- *   batch fails due to one non-retryable error.
  */
 @RequiredArgsConstructor
 @Slf4j
 class PollingQueueTask<T> extends Thread {
+    /**
+     * TODOs:
+     * - Option to re-drive failure back into the queue (can't re-drive it in result processor because that's a cyclic dependency)
+     *   This will require more work including max number of retries and could negatively impact batch success if entire
+     *   batch fails due to one non-retryable error.
+     * - Have a lock-free implementation using ConcurrentLinkedQueue.  The reason this is not originally done is because
+     *   I'm currently optimizing for cost (reducing the number of calls) instead of performance.
+     */
 
     private final Queue<T> sharedQueue;
     private final Lock sharedQueueLock;

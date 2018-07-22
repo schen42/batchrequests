@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BatchRequestsFactoryTest {
 
@@ -34,11 +35,11 @@ public class BatchRequestsFactoryTest {
 
     @Test
     public void test_builderWithQueuesOption() {
-        List<Queue> queues = Collections.singletonList(new LinkedList());
+        List<QueueAndLock> queues = Collections.singletonList(new QueueAndLock(new LinkedList(), new ReentrantLock()));
         BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
                 .withQueues(queues)
                 .build();
-        Assert.assertEquals(queues, factory.getQueues());
+        Assert.assertEquals(queues, factory.getQueueAndLocks());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -53,7 +54,7 @@ public class BatchRequestsFactoryTest {
         BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
                 .withNumQueues(2)
                 .build();
-        Assert.assertEquals(2, factory.getQueues().size());
+        Assert.assertEquals(2, factory.getQueueAndLocks().size());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -61,7 +62,7 @@ public class BatchRequestsFactoryTest {
         BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
                 .withNumQueues(0)
                 .build();
-        Assert.assertEquals(2, factory.getQueues().size());
+        Assert.assertEquals(2, factory.getQueueAndLocks().size());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -70,7 +71,7 @@ public class BatchRequestsFactoryTest {
                 .withNumQueues(2)
                 .withQueues(new ArrayList(new LinkedList()))
                 .build();
-        Assert.assertEquals(2, factory.getQueues().size());
+        Assert.assertEquals(2, factory.getQueueAndLocks().size());
     }
 
     @Test(expected = IllegalArgumentException.class)

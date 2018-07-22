@@ -6,22 +6,20 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * The long running thread pool that will process batches from a single queue.
+ * The long running thread pool that will process batches from a single queueAndLock.
  * @param <T> The request type
  */
 @Slf4j
 @Getter
 class PollingQueueWorker<T> {
 
-    @Getter private final Queue<T> queue;
+    @Getter private final QueueAndLock<T> queueAndLock;
     private final ExecutorService executorService;
     private final List<Future> taskFutures;
     @Getter private final BatchWriter<T> batchWriter;
@@ -29,12 +27,12 @@ class PollingQueueWorker<T> {
     @Getter private final int numPollingThreads;
     @Getter private final long maxBufferTimeMs;
 
-    public PollingQueueWorker(Queue<T> queue,
+    public PollingQueueWorker(QueueAndLock<T> queueAndLock,
                               BatchWriter<T> batchWriter,
                               int batchSize,
                               int numPollingThreads,
                               long maxBufferTimeMs) {
-        this.queue = queue;
+        this.queueAndLock = queueAndLock;
         this.batchWriter = batchWriter;
         this.batchSize = batchSize;
         this.numPollingThreads = numPollingThreads;
@@ -54,7 +52,7 @@ class PollingQueueWorker<T> {
         this.executorService = Executors.newFixedThreadPool(numPollingThreads);
         for (int i = 0; i < numPollingThreads; i++) {
             Future future = executorService.submit(
-                    new PollingQueueTask<T>(queue, new ReentrantLock(), batchWriter, batchSize, maxBufferTimeMs));
+                    new PollingQueueTask<T>(queueAndLock.getQueue(), queueAndLock.getLock(), batchWriter, batchSize, maxBufferTimeMs));
             taskFutures.add(future);
         }
         this.taskFutures = Collections.unmodifiableList(taskFutures);
@@ -83,16 +81,16 @@ class PollingQueueWorker<T> {
     }
 
     public static class PollingQueueWorkerBuilder<T> {
-        private final Queue<T> builderQueue;
+        private final QueueAndLock<T> builderQueueAndLock;
         private final BatchWriter<T> builderBatchWriter;
         private final int builderBatchSize;
         private int builderNumPollingThreads = 1;
         private long builderMaxBufferTimeMs = 1000L;
 
-        public PollingQueueWorkerBuilder(Queue<T> queue,
+        public PollingQueueWorkerBuilder(QueueAndLock<T> queueAndLock,
                                          BatchWriter<T> batchWriter,
                                          int batchSize) {
-            this.builderQueue = queue;
+            this.builderQueueAndLock = queueAndLock;
             this.builderBatchWriter = batchWriter;
             this.builderBatchSize = batchSize;
         }
@@ -108,7 +106,7 @@ class PollingQueueWorker<T> {
         }
 
         public PollingQueueWorker<T> build() {
-            return new PollingQueueWorker<>(builderQueue, builderBatchWriter, builderBatchSize,
+            return new PollingQueueWorker<>(builderQueueAndLock, builderBatchWriter, builderBatchSize,
                 builderNumPollingThreads, builderMaxBufferTimeMs);
         }
     }

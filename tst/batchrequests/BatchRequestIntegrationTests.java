@@ -78,7 +78,6 @@ public class BatchRequestIntegrationTests {
         List<Integer> itemsWritten = mockWriter.getBatchesWritten().stream().flatMap(List::stream).collect(Collectors.toList());
         List<Integer> expectedElements =  IntStream.range(0, numRecordsToSubmit).boxed().collect(Collectors.toList());
         MatcherAssert.assertThat(itemsWritten, Matchers.containsInAnyOrder(expectedElements.toArray()));
-        System.out.println(itemsWritten);
     }
 
 }
