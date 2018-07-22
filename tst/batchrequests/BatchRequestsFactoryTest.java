@@ -75,6 +75,12 @@ public class BatchRequestsFactoryTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void test_constructorNullWriter_thenFailure() {
+        new BatchRequestsFactory(null, Arrays.asList(new QueueAndLock(new LinkedList(), new ReentrantLock())),
+                1, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void test_constructorNullQueueList_thenFailure() {
         new BatchRequestsFactory(mockWriter, null, 1, 1, 1);
     }

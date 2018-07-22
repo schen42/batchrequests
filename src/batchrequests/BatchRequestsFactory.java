@@ -7,9 +7,11 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * TODO
  * Convenience factory to generate a {@link BatchSubmitter}.
- * @param <T>
+ *
+ * Create a factory using the provided {@link BatchRequestsFactoryBuilder}.
+ *
+ * @param <T> Type of request
  */
 @Slf4j
 public class BatchRequestsFactory<T> {
@@ -24,7 +26,7 @@ public class BatchRequestsFactory<T> {
     private final BatchSubmitter<T> batchSubmitter;
 
     /**
-     *
+     * Constructor with validation.
      * @param batchWriter A non-null {@link BatchWriter}
      * @param queueAndLocks A  non-null, non-empty {@link RandomAccess} list of queueAndLocks, that will be converted into an unmodifiable list
      * @param batchSize A positive-valued batch size
@@ -36,6 +38,9 @@ public class BatchRequestsFactory<T> {
                                 int batchSize,
                                 int numPollingWorkersPerQueue,
                                 long maxBufferTimeMs) {
+        if (batchWriter == null) {
+            throw new IllegalArgumentException("Need a non-null BatchWriter");
+        }
         if (queueAndLocks == null || queueAndLocks.size() < 1) {
             throw new IllegalArgumentException("Need non-null list that has a positive number of queueAndLocks");
         }
@@ -67,6 +72,9 @@ public class BatchRequestsFactory<T> {
                 pollingQueueWorkers.size(), numPollingWorkersPerQueue, maxBufferTimeMs);
     }
 
+    /**
+     * @return The {@link BatchSubmitter} used to send requests to batch.
+     */
     public BatchSubmitter<T> getBatchSubmitter() {
         return batchSubmitter;
     }
