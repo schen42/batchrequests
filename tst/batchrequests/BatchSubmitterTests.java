@@ -88,6 +88,9 @@ public class BatchSubmitterTests {
         LinkedList<Integer> combinedList = new LinkedList<>();
         combinedList.addAll(queueAndLock1.getQueue());
         combinedList.addAll(queueAndLock2.getQueue());
+        // Check that the work was evenly distributed
+        Assert.assertEquals(numsSubmitted / 2, queueAndLock1.getQueue().size());
+        Assert.assertEquals(numsSubmitted / 2, queueAndLock2.getQueue().size());
         MatcherAssert.assertThat(combinedList, Matchers.containsInAnyOrder(IntStream.range(0, numsSubmitted).boxed().toArray()));
     }
 }
