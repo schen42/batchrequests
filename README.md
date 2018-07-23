@@ -1,6 +1,25 @@
 This package provides an interface for batching requests asynchronously.  It will allow you to make single requests
 to simplify code and improve readability, but provide the benefits of making batch requests.
 
+For example, instead of structuring your code to collect batches of requests:
+
+    BatchRequest batchRequest = ...;
+    for (...) {
+        Request request = new Request();
+        if (numRequests == batchSize) {
+            batchRequest.call();
+            batchRequest = new BatchRequest();
+        } else {
+            batchRequest.add(request);
+        }
+    }
+    batchRequest.call();
+
+You can have your code structured at a request level and submit a request for batching:
+
+    Request request = new Request();
+    batchSubmitter.put(request);
+
 This package is intended to be used with long-running network calls that benefit from being batched.  For example:
 * APIs that charge per request rather than by batch size.  If an API charges you the same price for one request as
 a batch of 64 requests, you can reduce your cost by 64x.
@@ -12,8 +31,8 @@ This package is currently optimized to reduce the number of batch calls, possibl
 If performance is important, this package *may* not be for you (run performance tests to see if it is suitable for your needs).
 
 # How To Use
-Implement a `BatchWriter` and pass it to the `BatchRequestsFactory`.  Then, retrieve a `BatchSubmitter` to send
-requests to by calling the `BatchRequestsFactory#getBatchSubmitter` method.
+Implement a `BatchWriter` and use it to construct `BatchRequestsFactory` with the desired batch settings.
+Then, retrieve a `BatchSubmitter` to send requests to by calling the `BatchRequestsFactory#getBatchSubmitter` method.
 
 # How To Build
 This package uses Maven, so use your favorite way of building Maven projects.
