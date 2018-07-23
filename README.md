@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/schen42/batchrequests.svg?branch=master)](https://travis-ci.org/schen42/batchrequests)
+
 This package provides an interface for batching requests asynchronously.  It will allow you to make single requests
 to simplify code and improve readability, but provide the benefits of making batch requests.
 
