@@ -6,9 +6,10 @@ For example, instead of structuring your code to collect batches of requests:
     BatchRequest batchRequest = ...;
     for (...) {
         Request request = new Request();
-        if (numRequests == batchSize) {
+        if (numCollectedRequests == batchSize) {
             batchRequest.call();
             batchRequest = new BatchRequest();
+            numCollectedRequests = 0;
         } else {
             batchRequest.add(request);
         }
