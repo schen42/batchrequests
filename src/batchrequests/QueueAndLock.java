@@ -11,7 +11,8 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * Alternatively, we can use {@link java.util.concurrent.ConcurrentLinkedQueue}.  However, the current implementation
  * optimizes for less batch calls, and does so by calling the {@link Queue#size()} method which is described in the
- * Javadocs as "typically not very useful in concurrent applications."  If/when performance matters, this class
+ * Javadocs as "typically not very useful in concurrent applications" for ConcurrentLinkedQueue.
+ * If/when performance matters, this class
  * should not be used, and the lock-free implementation of ConcurrentLinkedQueue should be used instead.
  *
  * @param <T> The type of object that the queue will hold
