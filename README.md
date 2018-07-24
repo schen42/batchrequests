@@ -38,6 +38,8 @@ If performance is important, this package *may* not be for you (run performance 
 Implement a `BatchWriter` and use it to construct `BatchRequestsFactory` with the desired batch settings.
 Then, retrieve a `BatchSubmitter` to send requests to by calling the `BatchRequestsFactory#getBatchSubmitter` method.
 
+For more information, see the [Javadocs](https://schen42.github.io/batchrequests/)
+
 # How To Build
 This package uses Maven, so use your favorite way of building Maven projects.
 
