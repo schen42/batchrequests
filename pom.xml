@@ -83,6 +83,19 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.0.1</version>
+                <configuration>
+                    <!-- Generate it in docs/ during compile time for Github pages for now (until a better way is discovered) -->
+                    <reportOutputDirectory>${basedir}</reportOutputDirectory>
+                    <destDir>docs</destDir>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javadoc</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
