@@ -110,6 +110,22 @@
                 <artifactId>coveralls-maven-plugin</artifactId>
                 <version>4.3.0</version>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.5</version>
+            </plugin>
         </plugins>
     </build>
+
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.5</version>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
