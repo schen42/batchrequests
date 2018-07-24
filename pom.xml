@@ -95,12 +95,11 @@
                     </formats>
                 </configuration>
             </plugin>
-
-            <!--<plugin>
+            <plugin>
                 <groupId>org.eluder.coveralls</groupId>
                 <artifactId>coveralls-maven-plugin</artifactId>
                 <version>4.3.0</version>
-            </plugin>-->
+            </plugin>
         </plugins>
     </build>
 </project>
