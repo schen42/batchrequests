@@ -34,22 +34,6 @@ public class BatchRequestsFactoryTest {
     }
 
     @Test
-    public void test_builderWithQueuesOption() {
-        List<QueueAndLock> queues = Collections.singletonList(new QueueAndLock(new LinkedList(), new ReentrantLock()));
-        BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
-                .withQueues(queues)
-                .build();
-        Assert.assertEquals(queues, factory.getQueueAndLocks());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void test_builderWithQueuesOptionAndEmptyQueuesProvided_thenFailure() {
-        new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
-                .withQueues(new ArrayList<>())
-                .build();
-    }
-
-    @Test
     public void test_builderWithNumQueuesOption() {
         BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
                 .withNumQueues(2)
@@ -59,19 +43,9 @@ public class BatchRequestsFactoryTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void test_builderWithNumQueuesOptionAndNonPositiveNum_thenFailure() {
-        BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
+        new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
                 .withNumQueues(0)
                 .build();
-        Assert.assertEquals(2, factory.getQueueAndLocks().size());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void test_builderWithNumQueuesAndQueueOptions_thenFailure() {
-        BatchRequestsFactory factory = new BatchRequestsFactory.BatchRequestsFactoryBuilder(mockWriter)
-                .withNumQueues(2)
-                .withQueues(new ArrayList(new LinkedList()))
-                .build();
-        Assert.assertEquals(2, factory.getQueueAndLocks().size());
     }
 
     @Test(expected = IllegalArgumentException.class)

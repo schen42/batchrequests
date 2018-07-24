@@ -25,6 +25,11 @@ public class BatchRequestsFactory<T> {
     private final List<PollingQueueWorker<T>> pollingQueueWorkers;
     private final BatchSubmitter<T> batchSubmitter;
 
+    public static final int DEFAULT_NUM_QUEUES = 1;
+    public static final int DEFAULT_NUM_WORKERS_PER_QUEUE = 1;
+    public static final int DEFAULT_MAX_BATCH_SIZE = 25;
+    public static final long DEFAULT_MAX_BUFFER_TIME_MS = 1000L;
+
     /**
      * Constructor with validation.
      * @param batchWriter A non-null {@link BatchWriter}
@@ -85,60 +90,77 @@ public class BatchRequestsFactory<T> {
      */
     public static class BatchRequestsFactoryBuilder<T> {
         private final BatchWriter<T> builderBatchWriter;
-        private List<QueueAndLock<T>> builderQueues;
-        private int builderNumPollingWorkersPerQueue = 1;
-        private int builderBatchSize = 25;
+        private int builderNumPollingWorkersPerQueue = DEFAULT_NUM_WORKERS_PER_QUEUE;
+        private int builderBatchSize = DEFAULT_MAX_BATCH_SIZE;
         private Integer builderNumQueues;
-        private long builderMaxBufferTimeMs = 1000L;
+        private long builderMaxBufferTimeMs = DEFAULT_MAX_BUFFER_TIME_MS;
 
         public BatchRequestsFactoryBuilder(BatchWriter<T> batchWriter) {
             this.builderBatchWriter = batchWriter;
         }
 
-        /** Convenience function */
+        /**
+         * Requests are sent to queues to be batched.  Increasing the number of queues increases parallelism, but may
+         * increase the probability of not reaching the maximum buffer size (and therefore, the number of batch calls
+         * made).
+         * @param numQueues The number of queues to use.  Defaults to {@link #DEFAULT_NUM_QUEUES}
+         * @return {@link BatchRequestsFactoryBuilder}
+         */
         public BatchRequestsFactoryBuilder<T> withNumQueues(int numQueues) {
             this.builderNumQueues = numQueues;
             return this;
         }
 
-        public BatchRequestsFactoryBuilder<T> withQueues(List<QueueAndLock<T>> queues) {
-            this.builderQueues = queues;
-            return this;
-        }
-
+        /**
+         * Sets the number of polling workers per queue.  In the case that requests are batched and executed at a
+         * much slower rate than the queue is filled, you can add more parallel workers to batch requests.
+         * @param numPollingWorkersPerQueue Defaults to {@link #DEFAULT_NUM_WORKERS_PER_QUEUE}.
+         * @return {@link BatchRequestsFactoryBuilder}
+         */
         public BatchRequestsFactoryBuilder<T> withNumPollingWorkersPerQueue(int numPollingWorkersPerQueue) {
             this.builderNumPollingWorkersPerQueue = numPollingWorkersPerQueue;
             return this;
         }
 
+        /**
+         * @param batchSize The maximum number of requests per batch.  If the size isn't reached, the worker will wait
+         *                  with the time set by {@link #withMaxBufferTimeMs(long)}.
+         *                  Defaults to {@link #DEFAULT_MAX_BATCH_SIZE}.
+         * @return {@link BatchRequestsFactoryBuilder}
+         */
         public BatchRequestsFactoryBuilder<T> withBatchSize(int batchSize) {
             this.builderBatchSize = batchSize;
             return this;
         }
 
 
+        /**
+         * @param maxBufferTimeMs The maximum time to wait for a batch to fill to the size set by {@link #withBatchSize(int)}.
+         *                        Defaults to {@link #DEFAULT_MAX_BUFFER_TIME_MS}.
+         * @return {@link BatchRequestsFactoryBuilder}
+         */
         public BatchRequestsFactoryBuilder<T> withMaxBufferTimeMs(long maxBufferTimeMs) {
             this.builderMaxBufferTimeMs = maxBufferTimeMs;
             return this;
         }
 
+        /**
+         * @return {@link BatchRequestsFactory} with the provided options.
+         */
         public BatchRequestsFactory<T> build() {
-            if (this.builderQueues == null && this.builderNumQueues == null) {
-                // By default, have only one queue
-                this.builderQueues = Collections.singletonList(new QueueAndLock<>(new LinkedList<>(), new ReentrantLock()));
-            } else if (this.builderQueues != null && this.builderNumQueues != null) {
-                throw new IllegalArgumentException("Cannot set both the queueAndLocks and the number of queueAndLocks");
-            } else if (this.builderNumQueues != null) {
+            int numQueues = DEFAULT_NUM_QUEUES;
+            if (this.builderNumQueues != null) {
                 if (this.builderNumQueues < 1) {
-                    throw new IllegalArgumentException("Number of queueAndLocks must be positive. Got: " + this.builderNumQueues);
+                    throw new IllegalArgumentException("Number of queues must be positive. Got: " + this.builderNumQueues);
                 }
-                List<QueueAndLock<T>> listOfQueues = new ArrayList<>();
-                for (int i = 0; i < this.builderNumQueues; i++) {
-                    listOfQueues.add(new QueueAndLock<>(new LinkedList<>(), new ReentrantLock()));
-                }
-                this.builderQueues = listOfQueues;
-            } // Otherwise, the queue was set (and assumed to have been validated in the setter)
-            return new BatchRequestsFactory<>(builderBatchWriter, builderQueues, builderBatchSize,
+                numQueues = this.builderNumQueues;
+            }
+
+            List<QueueAndLock<T>> listOfQueues = new ArrayList<>();
+            for (int i = 0; i < numQueues; i++) {
+                listOfQueues.add(new QueueAndLock<>(new LinkedList<>(), new ReentrantLock()));
+            }
+            return new BatchRequestsFactory<>(builderBatchWriter, listOfQueues, builderBatchSize,
                     builderNumPollingWorkersPerQueue, builderMaxBufferTimeMs);
         }
     }

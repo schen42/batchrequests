@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.RandomAccess;
 
 /**
- * Main interface for submitting a record to be batched.  This is class NOT thread-safe.
+ * Main interface for submitting a record to be batched.  This class is thread-safe.
  * @param <T> Type of record
  */
 public class BatchSubmitter<T> {

@@ -56,6 +56,7 @@ TODO: Maybe move it to an issue tracker
 * Performance profiling
 * Optional retry mechanism (that can be handled via BatchSubmitter right now)
 * Lock-free implementation
+* Ability to batch based on object size (or some other determination of size)
 
 # Credits
 * See the `pom.xml` for all dependencies used.
