@@ -9,9 +9,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Convenience factory to generate a {@link BatchSubmitter}.
  *
- * Create a factory using the provided {@link BatchRequestsFactoryBuilder}.
+ * Create a factory using {@link BatchRequestsFactoryBuilder}.
  *
- * @param <T> Type of request
+ * @param <T> Type of the request to be batched.
  */
 @Slf4j
 public class BatchRequestsFactory<T> {
@@ -25,15 +25,22 @@ public class BatchRequestsFactory<T> {
     private final List<PollingQueueWorker<T>> pollingQueueWorkers;
     private final BatchSubmitter<T> batchSubmitter;
 
+    /** Value: {@value #DEFAULT_NUM_QUEUES} */
     public static final int DEFAULT_NUM_QUEUES = 1;
+
+    /** Value: {@value #DEFAULT_NUM_WORKERS_PER_QUEUE} */
     public static final int DEFAULT_NUM_WORKERS_PER_QUEUE = 1;
+
+    /** Value: {@value #DEFAULT_MAX_BATCH_SIZE} */
     public static final int DEFAULT_MAX_BATCH_SIZE = 25;
+
+    /** Value: {@value #DEFAULT_MAX_BUFFER_TIME_MS} */
     public static final long DEFAULT_MAX_BUFFER_TIME_MS = 1000L;
 
     /**
      * Constructor with validation.
      * @param batchWriter A non-null {@link BatchWriter}
-     * @param queueAndLocks A  non-null, non-empty {@link RandomAccess} list of queueAndLocks, that will be converted into an unmodifiable list
+     * @param queueAndLocks A  non-null, non-empty {@link RandomAccess} list of {@link QueueAndLock}, that will be converted into an unmodifiable list
      * @param batchSize A positive-valued batch size
      * @param numPollingWorkersPerQueue A positive-valued number of workers per queue
      * @param maxBufferTimeMs A positive-valued buffer time in which a worker will wait before sending a non-full batch
@@ -101,8 +108,8 @@ public class BatchRequestsFactory<T> {
 
         /**
          * Requests are sent to queues to be batched.  Increasing the number of queues increases parallelism, but may
-         * increase the probability of not reaching the maximum buffer size (and therefore, the number of batch calls
-         * made).
+         * increase the probability of not reaching the maximum buffer size (and therefore increasing the number
+         * of batch calls made).
          * @param numQueues The number of queues to use.  Defaults to {@link #DEFAULT_NUM_QUEUES}
          * @return {@link BatchRequestsFactoryBuilder}
          */

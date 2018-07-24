@@ -36,7 +36,8 @@ public class BatchSubmitter<T> {
     }
 
     /**
-     * @param requestItem An item to collect into a batch, for later batch writing.
+     * @param requestItem An request to be collect into a batch.  When the batch is full, it will be sent to a
+     *                    {@link BatchWriter}.
      */
     public synchronized void put(T requestItem) {
         QueueAndLock<T> queueAndLock = queueAndLocks.get(currentIndex);

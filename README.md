@@ -44,6 +44,11 @@ This package uses Maven, so use your favorite way of building Maven projects.
 Note that this project uses [Lombok](https://projectlombok.org/), which may require additional setup if you use an
 IDE.
 
+Until I figure out how to use Maven, here are some commands for common tasks
+* Run all tests: `mvn test`
+* Run coverage: `mvn cobertura:cobertura`
+* Generate javadocs jar: `mvn javadocs:jar`
+
 # Tenets
 * Be as easy to use as possible
 * Be as lightweight as possible (as few dependencies as possible)

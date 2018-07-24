@@ -4,8 +4,8 @@ import java.util.Collection;
 
 /**
  * The writer that will perform the batch write to the desired source.  To be implemented
- * by the client.
- * @param <T> Type of input to the batch
+ * by the client and injected in the {@link BatchRequestsFactory}.
+ * @param <T> Type of the request that will be batched.
  */
 public interface BatchWriter<T> {
 
