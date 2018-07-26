@@ -3,13 +3,27 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>batchrequests</groupId>
-    <artifactId>batchrequests-core</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <groupId>com.sgcprojects</groupId>
+    <artifactId>batchrequests</artifactId>
+    <version>0.1</version>
     <packaging>jar</packaging>
 
-    <name>batchrequests-core</name>
+    <name>batchrequests</name>
     <description>Contains the batching logic for the batchrequests library</description>
+    <url>https://github.com/schen42/batchrequests</url>
+
+    <developers>
+        <developer>
+            <name>Sean Chen</name>
+            <email>batchrequests@seanchen.info</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com:schen42/batchrequests.git</connection>
+        <developerConnection>scm:git:ssh://github.com:schen42/batchrequests.git</developerConnection>
+        <url>https://github.com/schen42/batchrequests</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -80,6 +94,7 @@
                 <version>3.0.1</version>
                 <executions>
                     <execution>
+                        <id>attach-sources</id>
                         <goals>
                             <goal>jar</goal>
                         </goals>
@@ -102,6 +117,7 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>attach-javadocs</id>
                         <goals>
                             <goal>jar</goal>
                         </goals>
@@ -134,6 +150,32 @@
                 <artifactId>findbugs-maven-plugin</artifactId>
                 <version>3.0.5</version>
             </plugin>
+            <!-- See: https://central.sonatype.org/pages/apache-maven.html -->
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.8</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -147,4 +189,12 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <!-- See: https://central.sonatype.org/pages/apache-maven.html -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
