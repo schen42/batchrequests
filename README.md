@@ -51,6 +51,8 @@ Until I figure out how to use Maven, here are some commands for common tasks
 * Run coverage: `mvn cobertura:cobertura`
 * Generate javadocs jar: `mvn javadocs:jar`
 
+To generate a source and javadocs JAR for packaging, run `mvn package`.
+
 # Tenets
 * Be as easy to use as possible
 * Be as lightweight as possible (as few dependencies as possible)
