@@ -1,8 +1,7 @@
 [![Build Status](https://travis-ci.org/schen42/batchrequests.svg?branch=master)](https://travis-ci.org/schen42/batchrequests)
 [![Coverage Status](https://coveralls.io/repos/github/schen42/batchrequests/badge.svg)](https://coveralls.io/github/schen42/batchrequests)
 
-This package provides an interface for batching requests asynchronously.  It will allow you to make single requests
-to simplify code and improve readability, but provide the benefits of making batch requests.
+This package allows you to make individual method calls that are automatically and asynchronously batched by the framework.
 
 For example, instead of structuring your code to collect batches of requests:
 
