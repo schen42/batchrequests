@@ -30,12 +30,13 @@ a batch of 64 requests, you can reduce your cost by 64x.
 and you are charged the same for 64KB because they're in separate requests, you can reduce your cost by 64x by batching
 all requests into one.
 
-This package is currently optimized to reduce the number of batch calls, possibly at the expense of performance.
+This package is currently optimized to reduce the number of batch calls, and was not built with extreme performance in mind.
 If performance is important, this package *may* not be for you (run performance tests to see if it is suitable for your needs).
 
 # How To Use
-Implement a `BatchWriter` and use it to construct `BatchRequestsFactory` with the desired batch settings.
-Then, retrieve a `BatchSubmitter` to send requests to by calling the `BatchRequestsFactory#getBatchSubmitter` method.
+Provide an implementation of a batch call that will be performed after the framework has batched your requests using the `BatchWriter` interface.
+Construct `BatchRequestsFactory` with the desired batch settings and the user-implemented `BatchWriter`.
+Then, retrieve a `BatchSubmitter` to send individual requests to by calling the `BatchRequestsFactory#getBatchSubmitter` method.
 
 For more information, see the [Javadocs](https://schen42.github.io/batchrequests/)
 
